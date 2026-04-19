@@ -1,0 +1,164 @@
+PS C:\Users\Student> hostname
+Ops
+PS C:\Users\Student> $PSVersionTable.PSVersion
+
+Major  Minor  Patch  PreReleaseLabel BuildLabel
+-----  -----  -----  --------------- ----------
+7      5      1
+
+PS C:\Users\Student> 
+ *  History restored 
+
+PS C:\Users\Student> hostname
+Ops
+PS C:\Users\Student> $PSVersionTable.PSVersion
+
+Major  Minor  Patch  PreReleaseLabel BuildLabel
+-----  -----  -----  --------------- ----------
+7      5      1
+
+PS C:\Users\Student> cd C:\Users\Student
+PS C:\Users\Student> Get-ChildItem CapstoneTools.psm1, Invoke-Capstone.ps1 | Select-Object Name, Length, LastWriteTime
+
+Name                Length LastWriteTime
+----                ------ -------------
+CapstoneTools.psm1   11998 4/18/2026 3:54:23 PM
+Invoke-Capstone.ps1   6591 4/18/2026 3:54:23 PM
+
+PS C:\Users\Student> Get-Service WinRM
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinRM              Windows Remote Management (WS-Managem…
+
+PS C:\Users\Student> (Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+Depot,System-1,System-2,System-3
+PS C:\Users\Student> 'System-1','System-2','System-3' | ForEach-Object { try { $r = Test-WSMan -ComputerName $_ -ErrorAction Stop; "$_ : OK" } catch { "$_ : FAIL - $($_.Exception.Message)" } }
+System-1 : OK
+System-2 : OK
+System-3 : OK
+PS C:\Users\Student> $password = ConvertTo-SecureString 'student' -AsPlainText -Force
+PS C:\Users\Student> $cred = New-Object System.Management.Automation.PSCredential('System-1\student', $password)
+PS C:\Users\Student> $cred.UserName
+System-1\student
+PS C:\Users\Student> $s = New-PSSession -ComputerName System-1 -Credential $cred
+New-PSSession: [System-1] Connecting to remote server System-1 failed with the following error message : Access is denied. For more information, see the about_Remote_Troubleshooting Help topic.
+PS C:\Users\Student> $s
+PS C:\Users\Student> Remove-PSSession $s
+Remove-PSSession: Cannot validate argument on parameter 'Id'. The argument is null. Provide a valid value for the argument, and then try running the command again.
+PS C:\Users\Student> $s = New-PSSession -ComputerName System-1 -Credential $cred
+PS C:\Users\Student> $s
+
+ Id Name            Transport ComputerName    ComputerType    State         ConfigurationName     Availability
+ -- ----            --------- ------------    ------------    -----         -----------------     ------------
+  2 Runspace2       WSMan     System-1        RemoteMachine   Opened        Microsoft.PowerShell     Available
+
+PS C:\Users\Student> Remove-PSSession $s  
+PS C:\Users\Student> $dotCred = New-Object System.Management.Automation.PSCredential('.\student', $password)
+PS C:\Users\Student> $s = New-PSSession -ComputerName System-1 -Credential $dotCred
+PS C:\Users\Student> $s
+
+ Id Name            Transport ComputerName    ComputerType    State         ConfigurationName     Availability
+ -- ----            --------- ------------    ------------    -----         -----------------     ------------
+  3 Runspace3       WSMan     System-1        RemoteMachine   Opened        Microsoft.PowerShell     Available
+
+PS C:\Users\Student> Remove-PSSession $s
+PS C:\Users\Student> Import-Module C:\Users\Student\CapstoneTools.psm1 -Force
+PS C:\Users\Student> Get-Command -Module CapstoneTools
+
+CommandType     Name                                               Version    Source
+-----------     ----                                               -------    ------
+Function        Get-RemoteProcessInfo                              0.0        CapstoneTools
+Function        Get-RemoteServiceInfo                              0.0        CapstoneTools
+Function        Install-SysmonRemote                               0.0        CapstoneTools
+
+PS C:\Users\Student> Get-RemoteServiceInfo -ComputerName System-1 -Credential $cred | Measure-Object
+
+Count             : 271
+Average           : 
+Sum               : 
+Maximum           : 
+Minimum           : 
+StandardDeviation : 
+Property          : 
+
+PS C:\Users\Student> Get-RemoteProcessInfo -ComputerName System-1 -Credential $cred | Measure-Object
+
+Count             : 145
+Average           : 
+Sum               : 
+Maximum           : 
+Minimum           : 
+StandardDeviation : 
+Property          : 
+
+PS C:\Users\Student> Get-RemoteProcessInfo -ComputerName System-1 -Credential $cred | Select-Object -First 3 | Format-List
+
+ComputerName    : System-1
+Name            : System Idle Process
+ProcessId       : 0
+ParentProcessId : 0
+CommandLine     : 
+ExecutablePath  : 
+SessionId       : 0
+UserName        : 
+
+ComputerName    : System-1
+Name            : System
+ProcessId       : 4
+ParentProcessId : 0
+CommandLine     : 
+ExecutablePath  : 
+SessionId       : 0
+UserName        : 
+
+ComputerName    : System-1
+Name            : Registry
+ProcessId       : 108
+ParentProcessId : 4
+CommandLine     : 
+ExecutablePath  : 
+SessionId       : 0
+UserName        : NT AUTHORITY\SYSTEM
+
+PS C:\Users\Student> $sysmonDir = 'C:\Tools\Sysmon'
+PS C:\Users\Student> New-Item -ItemType Directory -Path $sysmonDir -Force | Out-Null
+PS C:\Users\Student> Invoke-WebRequest -Uri 'https://download.sysinternals.com/files/Sysmon.zip' -OutFile "$sysmonDir\Sysmon.zip"
+PS C:\Users\Student> Expand-Archive "$sysmonDir\Sysmon.zip" -DestinationPath $sysmonDir -Force
+PS C:\Users\Student> Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml' -OutFile "$sysmonDir\sysmonconfig-export.xml"
+PS C:\Users\Student> Get-ChildItem $sysmonDir
+
+    Directory: C:\Tools\Sysmon
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           3/26/2026  6:55 PM           7490 Eula.txt
+-a---           3/26/2026  6:55 PM        6260160 Sysmon.exe
+-a---           4/18/2026  4:08 PM        2877619 Sysmon.zip
+-a---           3/26/2026  6:55 PM        3248064 Sysmon64.exe
+-a---           3/26/2026  6:55 PM        3138496 Sysmon64a.exe
+-a---           4/18/2026  4:08 PM         123257 sysmonconfig-export.xml
+
+PS C:\Users\Student> Install-SysmonRemote -ComputerName System-1 -Credential $cred -SysmonBinaryPath 'C:\Tools\Sysmon\Sysmon64.exe' -SysmonConfigPath 'C:\Tools\Sysmon\sysmonconfig-export.xml'
+
+ComputerName Status ServiceState Message
+------------ ------ ------------ -------
+System-1     Failed Unknown      Processing data from remote server System-1 failed with the following error message: Access is denied. For more information, see the about_Remote_Troubleshooting Help top… 
+
+PS C:\Users\Student> Get-RemoteProcessInfo -ComputerName System-1 -Credential $cred | Measure-Object
+
+Count             : 143
+Average           : 
+Sum               : 
+Maximum           : 
+Minimum           : 
+StandardDeviation : 
+Property          : 
+
+PS C:\Users\Student> Install-SysmonRemote -ComputerName System-1 -Credential $cred -SysmonBinaryPath 'C:\Tools\Sysmon\Sysmon64.exe' -SysmonConfigPath 'C:\Tools\Sysmon\sysmonconfig-export.xml'
+
+ComputerName Status ServiceState Message
+------------ ------ ------------ -------
+System-1     Failed Unknown      Processing data from remote server System-1 failed with the following error message: Access is denied. For more information, see the about_Remote_Troubleshooting Help top… 
+
+PS C:\Users\Student>

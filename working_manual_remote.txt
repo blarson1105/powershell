@@ -1,0 +1,60 @@
+PS C:\Users\Student> $password = ConvertTo-SecureString 'student' -AsPlainText -Force
+PS C:\Users\Student> $cred = New-Object System.Management.Automation.PSCredential('.\student', $password)
+PS C:\Users\Student> 
+PS C:\Users\Student> $s = New-PSSession -ComputerName System-1 -Credential $cred -Authentication negotiate
+PS C:\Users\Student> Copy-Item 'C:\Tools\Sysmon\Sysmon64.exe' -Destination 'C:\Windows\Temp\Sysmon64.exe' -ToSession $s -Force
+PS C:\Users\Student> Copy-Item 'C:\Tools\Sysmon\sysmonconfig-export.xml' -Destination 'C:\Windows\Temp\sysmonconfig-export.xml' -ToSession $s -Force
+PS C:\Users\Student> 
+PS C:\Users\Student> Invoke-Command -Session $s -ScriptBlock {
+>>     whoami
+>>     & 'C:\Windows\Temp\Sysmon64.exe' -accepteula -i 'C:\Windows\Temp\sysmonconfig-export.xml'
+>>     $LASTEXITCODE
+>> }
+system-1\student
+NotSpecified: (:String) [], RemoteException
+
+
+System Monitor v15.20 - System activity monitor
+
+By Mark Russinovich and Thomas Garnier
+
+Copyright (C) 2014-2026 Microsoft Corporation
+
+Using libxml2. libxml2 is Copyright (C) 1998-2012 Daniel Veillard. All Rights Reserved.
+
+Sysinternals - www.sysinternals.com
+
+
+
+Loading configuration file with schema version 4.50
+
+Sysmon schema version: 4.91
+
+Configuration file validated.
+
+Sysmon64 installed.
+
+SysmonDrv installed.
+
+Starting SysmonDrv.
+
+SysmonDrv started.
+
+Starting Sysmon64..
+
+Sysmon64 started.
+
+
+0
+PS C:\Users\Student>
+PS C:\Users\Student> Invoke-Command -Session $s -ScriptBlock {
+>>     Get-Service -Name Sysmon64 -ErrorAction SilentlyContinue
+>> }
+
+Status   Name               DisplayName                            PSComputerName
+------   ----               -----------                            --------------
+Running  Sysmon64           Sysmon64                               System-1
+
+PS C:\Users\Student>
+PS C:\Users\Student> Remove-PSSession $s
+PS C:\Users\Student> 
