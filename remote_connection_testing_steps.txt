@@ -1,0 +1,190 @@
+Remote Connection Setup and Testing Steps
+
+Purpose:
+Validate that remote PowerShell connectivity from Ops to the target systems is working before testing the capstone functions.
+
+Run all commands from Ops.
+
+--------------------------------------------------
+1) Confirm you are on Ops
+--------------------------------------------------
+
+hostname
+$PSVersionTable.PSVersion
+
+Expected:
+- Hostname should show Ops
+- PowerShell version should display successfully
+
+--------------------------------------------------
+2) Verify the capstone files are present
+--------------------------------------------------
+
+Get-ChildItem C:\Users\Student\CapstoneTools.psm1, C:\Users\Student\Invoke-Capstone.ps1 |
+Select-Object Name, Length, LastWriteTime
+
+Expected:
+- Both files should be listed
+
+--------------------------------------------------
+3) Verify WinRM is running locally
+--------------------------------------------------
+
+Get-Service WinRM
+
+Expected:
+- Status should be Running
+
+--------------------------------------------------
+4) Check TrustedHosts
+--------------------------------------------------
+
+(Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+
+Expected:
+- The output should include the remote targets, such as:
+  Depot,System-1,System-2,System-3
+
+If the targets are missing, set them:
+
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value 'Depot,System-1,System-2,System-3' -Force
+
+Verify again:
+
+(Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+
+--------------------------------------------------
+5) Test WSMan connectivity to each target
+--------------------------------------------------
+
+'System-1','System-2','System-3' | ForEach-Object {
+    try {
+        Test-WSMan -ComputerName $_ -ErrorAction Stop | Out-Null
+        "$_ : OK"
+    }
+    catch {
+        "$_ : FAIL - $($_.Exception.Message)"
+    }
+}
+
+Expected:
+- Each target should return OK
+
+If any target fails here, stop and troubleshoot before continuing.
+
+--------------------------------------------------
+6) Build the credential object
+--------------------------------------------------
+
+$password = ConvertTo-SecureString 'student' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential('.\student', $password)
+$cred.UserName
+
+Expected:
+- Username should display as .\student
+
+--------------------------------------------------
+7) Open a test PSSession to System-1
+--------------------------------------------------
+
+$s = New-PSSession -ComputerName System-1 -Credential $cred -Authentication Negotiate
+$s
+
+Expected:
+- The session state should be Opened
+
+If this fails, stop and record the exact error.
+
+--------------------------------------------------
+8) Validate remote command execution
+--------------------------------------------------
+
+Invoke-Command -Session $s -ScriptBlock {
+    hostname
+    whoami
+    $PSVersionTable.PSVersion
+}
+
+Expected:
+- Hostname should show System-1
+- whoami should show system-1\student
+- PowerShell version should display successfully
+
+--------------------------------------------------
+9) Validate remote data queries
+--------------------------------------------------
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Service WinRM
+}
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Process | Select-Object -First 5 ProcessName, Id
+}
+
+Expected:
+- Service information should return
+- Process information should return
+
+--------------------------------------------------
+10) Validate file copy over the PSSession
+--------------------------------------------------
+
+'remote copy test' | Set-Content C:\Users\Student\test.txt
+
+Copy-Item C:\Users\Student\test.txt -Destination C:\Windows\Temp\test.txt -ToSession $s -Force
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Item C:\Windows\Temp\test.txt
+    Get-Content C:\Windows\Temp\test.txt
+}
+
+Expected:
+- The file should exist on the remote system
+- The file contents should display as: remote copy test
+
+--------------------------------------------------
+11) Close the session
+--------------------------------------------------
+
+Remove-PSSession $s
+
+Expected:
+- The session should close without error
+
+--------------------------------------------------
+Success Criteria
+--------------------------------------------------
+
+The remote connection setup is considered validated when all of the following are true:
+
+1. Test-WSMan succeeds
+2. New-PSSession succeeds
+3. Invoke-Command returns the remote hostname and username
+4. Copy-Item -ToSession succeeds
+5. The copied file is verified on the remote system
+
+--------------------------------------------------
+Fast Validation Block
+--------------------------------------------------
+
+$password = ConvertTo-SecureString 'student' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential('.\student', $password)
+
+Test-WSMan -ComputerName System-1
+
+$s = New-PSSession -ComputerName System-1 -Credential $cred -Authentication Negotiate
+
+Invoke-Command -Session $s -ScriptBlock {
+    hostname
+    whoami
+}
+
+'remote copy test' | Set-Content C:\Users\Student\test.txt
+Copy-Item C:\Users\Student\test.txt -Destination C:\Windows\Temp\test.txt -ToSession $s -Force
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Content C:\Windows\Temp\test.txt
+}
+
+Remove-PSSession $s
