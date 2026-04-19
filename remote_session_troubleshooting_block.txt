@@ -1,0 +1,27 @@
+$password = ConvertTo-SecureString 'student' -AsPlainText -Force
+
+$cred1 = New-Object System.Management.Automation.PSCredential('.\student', $password)
+$cred2 = New-Object System.Management.Automation.PSCredential('System-1\student', $password)
+
+(Get-Item WSMan:\localhost\Client\TrustedHosts).Value
+Test-WSMan -ComputerName System-1
+
+try {
+    $s = New-PSSession -ComputerName System-1 -Credential $cred1 -Authentication Negotiate -ErrorAction Stop
+    "DOT SUCCESS"
+    Invoke-Command -Session $s -ScriptBlock { whoami }
+    Remove-PSSession $s
+}
+catch {
+    "DOT FAIL: $($_.Exception.Message)"
+}
+
+try {
+    $s = New-PSSession -ComputerName System-1 -Credential $cred2 -Authentication Negotiate -ErrorAction Stop
+    "HOST SUCCESS"
+    Invoke-Command -Session $s -ScriptBlock { whoami }
+    Remove-PSSession $s
+}
+catch {
+    "HOST FAIL: $($_.Exception.Message)"
+}
