@@ -1,0 +1,19 @@
+$password = ConvertTo-SecureString 'student' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential('.\student', $password)
+
+$s = New-PSSession -ComputerName System-1 -Credential $cred
+
+Copy-Item 'C:\Tools\Sysmon\Sysmon64.exe' -Destination 'C:\Windows\Temp\Sysmon64.exe' -ToSession $s -Force
+Copy-Item 'C:\Tools\Sysmon\sysmonconfig-export.xml' -Destination 'C:\Windows\Temp\sysmonconfig-export.xml' -ToSession $s -Force
+
+Invoke-Command -Session $s -ScriptBlock {
+    whoami
+    & 'C:\Windows\Temp\Sysmon64.exe' -accepteula -i 'C:\Windows\Temp\sysmonconfig-export.xml'
+    $LASTEXITCODE
+}
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Service -Name Sysmon64 -ErrorAction SilentlyContinue
+}
+
+Remove-PSSession $s
