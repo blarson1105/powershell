@@ -1,0 +1,12 @@
+Get-PSSession | Remove-PSSession -ErrorAction SilentlyContinue
+
+$s = New-PSSession -ComputerName System-1 -Credential $cred -Authentication Negotiate
+$s
+
+Invoke-Command -Session $s -ScriptBlock { hostname; whoami }
+
+Invoke-Command -Session $s -ScriptBlock {
+    Get-Service Sysmon64 -ErrorAction SilentlyContinue
+}
+
+Remove-PSSession $s
