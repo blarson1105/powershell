@@ -1,0 +1,394 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting — Final Exam
+// =============================================================================
+// Version: 2.0
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting
+//   course book on the CVTE LMS (Moodle Book ID 584)
+//   https://moodle.ccoecaas.net/mod/book/tool/print/index.php?id=584
+//
+// Authoritative scope source: 170A-WOAC-APS-WRE-SCOPE-001
+//   (Written Assessment Scope Contract), Version 1.0
+// CTSSB authority: 170A CTSSB Output, 16 Feb 2024, Module 1, pp. 48-49
+//
+// Format: Moodle GIFT
+// Total questions: 29 (within the 25-30 contract requirement)
+// Distribution: flat across CTSSB K1-K11 per Section 6.4 of the contract
+// All non-matching questions have exactly one correct answer per
+//   Section 11.1(b) of the contract.
+//
+// Question-to-section traceability is recorded in the comment header
+// preceding each question.
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K1 - .NET Usage Within PowerShell
+
+// -----------------------------------------------------------------------------
+// K1.1 - Recall and Application
+// Source: Course book section 2.2 (Properties, Methods, and Type Names)
+// -----------------------------------------------------------------------------
+::K1.1 Discovering type name::[html]<p>You want to find out which .NET class is behind a date object you stored in <code>$Date</code>. Which expression returns the full .NET type name?</p>{
+    =<code>$Date.GetType().FullName</code> # Correct. GetType() returns a Type object; .FullName returns the fully qualified .NET type name (e.g., System.DateTime).
+    ~<code>$Date.TypeName</code> # Incorrect. There is no TypeName property on arbitrary objects.
+    ~<code>Get-Type $Date</code> # Incorrect. Get-Type is not a PowerShell cmdlet.
+    ~<code>$Date | Get-Class</code> # Incorrect. Get-Class is not a PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K1.2 - Recall and Application
+// Source: Course book section 2.3 (Static vs Instance Members)
+// -----------------------------------------------------------------------------
+::K1.2 Static vs instance::[html]<p>Which expression uses a STATIC member call?</p>{
+    =<code>[environment]::MachineName</code> # Correct. The :: operator on a type indicates a static member call; no instance is required.
+    ~<code>$Date.AddDays(7)</code> # Incorrect. The . operator on a variable indicates an instance method call on an existing object.
+    ~<code>$Process.Kill()</code> # Incorrect. Calling .Kill() on $Process is an instance method call.
+    ~<code>$PSVersionTable.PSEdition</code> # Incorrect. Accessing a property on a variable is an instance member access.
+}
+
+// -----------------------------------------------------------------------------
+// K1.3 - Recall and Application
+// Source: Course book section 2.4 (Useful .NET Types in Scripts)
+// -----------------------------------------------------------------------------
+::K1.3 Path combining::[html]<p>You need to build a file path from three components — a base directory, a subfolder, and a filename — without manually concatenating strings. Which expression is the recommended pattern from the course?</p>{
+    =<code>[System.IO.Path]::Combine('C:\Tools', 'Sysmon', 'Sysmon64.exe')</code> # Correct. The course recommends [System.IO.Path]::Combine() because it normalizes separators and is safer than string concatenation.
+    ~<code>'C:\Tools' + '\' + 'Sysmon' + '\' + 'Sysmon64.exe'</code> # Incorrect. String concatenation is what the course explicitly recommends against because it does not normalize separators.
+    ~<code>Join-String 'C:\Tools', 'Sysmon', 'Sysmon64.exe'</code> # Incorrect. Join-String exists but is not the path-construction pattern; it joins strings with a separator, not paths.
+    ~<code>"C:\Tools/Sysmon/Sysmon64.exe"</code> # Incorrect. A literal mixed-separator string sidesteps the path-construction problem; it is what the course recommends against.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K2 - Advanced Debugging Techniques
+
+// -----------------------------------------------------------------------------
+// K2.1 - Recall and Application
+// Source: Course book section 1.8 (Error Handling) and 3.1 (Debugging Mindset)
+// -----------------------------------------------------------------------------
+::K2.1 -ErrorAction Stop::[html]<p>You wrap a <code>Get-CimInstance</code> call in a <code>try/catch</code> block, but when the call fails the <code>catch</code> block never executes. What is the most likely cause and fix?</p>{
+    =The cmdlet wrote a non-terminating error, which try/catch does not catch. Add <code>-ErrorAction Stop</code> to the cmdlet so its errors are treated as terminating. # Correct. The course book specifies that without -ErrorAction Stop, many cmdlets write non-terminating errors and the catch block never fires.
+    ~The catch block requires an explicit <code>throw</code> statement to fire. # Incorrect. catch fires automatically on a terminating error; throw is for raising errors, not catching them.
+    ~try/catch is not supported with cmdlets, only with .NET method calls. # Incorrect. try/catch works with any terminating error, including those from cmdlets.
+    ~The catch block needs to be replaced with a <code>finally</code> block to actually run. # Incorrect. finally always runs regardless of error; it is not a substitute for catch.
+}
+
+// -----------------------------------------------------------------------------
+// K2.2 - Recall and Application
+// Source: Course book section 3.1 (Debugging Mindset - "four checks")
+// -----------------------------------------------------------------------------
+::K2.2 The four checks::[html]<p>According to the debugging mindset taught in the course, when a script misbehaves, what should you check FIRST before rewriting any code?</p>{
+    =The actual parameter values passed in, the type of the object you are operating on, the execution context, and the exact error message. # Correct. The course's "four checks before you rewrite anything" is the canonical answer.
+    ~Restart the PowerShell session and try again. # Incorrect. The course explicitly warns against the "rewrite-first" instinct; restart is a less informed version of the same mistake.
+    ~Set a breakpoint at the first line of the script and step through it. # Incorrect. Breakpoints have a place, but the course teaches the four-check habit as the first response.
+    ~Increase the verbosity of all cmdlets in the script with <code>-Verbose</code>. # Incorrect. Verbose output is a tool, not a discipline; the four checks come first.
+}
+
+// -----------------------------------------------------------------------------
+// K2.3 - Recall and Application
+// Source: Course book section 3.1 (context check commands)
+// -----------------------------------------------------------------------------
+::K2.3 Execution context check::[html]<p>A teammate reports their script "works locally but doesn't work remotely." Which single command, run inside the remote session, most directly verifies the execution-context check from the course's debugging mindset?</p>{
+    =<code>whoami</code> # Correct. The course teaches whoami as the primary execution-context check (who am I authenticated as?), and the symptom-to-cause table in 3.4 names it for "silently wrong results."
+    ~<code>Get-Host</code> # Incorrect. Get-Host returns the host application info, not the authenticated identity.
+    ~<code>Test-Connection</code> # Incorrect. Test-Connection checks network reachability, not execution context.
+    ~<code>Get-PSSession</code> # Incorrect. Get-PSSession lists existing sessions; it does not verify the identity inside the current session.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K3 - Double-Hop Problem
+
+// -----------------------------------------------------------------------------
+// K3.1 - Explain-in-Context
+// Source: Course book section 3.3 (Authentication, Delegation, Double-Hop)
+// -----------------------------------------------------------------------------
+::K3.1 Recognizing the double-hop::[html]<p>An operator runs a script interactively from Ops that successfully reads from a UNC share on Depot. They then place the same logic inside a job that runs on System-1. The job fails with a permission-style error when accessing Depot. What is the most likely cause?</p>{
+    =Credentials authenticated to System-1 but were not delegated from System-1 onward to Depot. This is the double-hop problem. # Correct. The course explicitly describes this exact scenario as the canonical double-hop manifestation.
+    ~The user's account was disabled in Active Directory between the two attempts. # Incorrect. The first attempt succeeded; account status is not the differentiator.
+    ~Depot's WinRM service stopped between attempts. # Incorrect. WinRM is not used to access a UNC share; the failure is about credential delegation, not transport.
+    ~The script has a syntax error that only surfaces when run inside a job. # Incorrect. The error is a permission-style error, not a syntax error.
+}
+
+// -----------------------------------------------------------------------------
+// K3.2 - Explain-in-Context
+// Source: Course book section 3.3 ("What to do about it" - CredSSP and RBKCD)
+// -----------------------------------------------------------------------------
+::K3.2 Production workaround selection::[html]<p>For a long-running production environment where credential exposure is a concern, which double-hop solution does the course identify as the production-grade option?</p>{
+    =Resource-Based Kerberos Constrained Delegation (RBKCD), configured in Active Directory on the target resource. # Correct. The course names RBKCD as the production option because it does not expose the user's credential to the intermediate machine.
+    ~CredSSP enabled on every machine in the chain. # Incorrect. The course frames CredSSP as the simpler course-work option, with security tradeoffs that make it inappropriate for high-value production accounts.
+    ~Hard-coding administrator credentials into the script and passing them to each remote call. # Incorrect. Embedding credentials is not a delegation pattern and violates basic security practice.
+    ~Disabling Kerberos and forcing NTLM authentication on all hops. # Incorrect. NTLM does not solve credential delegation; it has its own credential-relay risks.
+}
+
+// -----------------------------------------------------------------------------
+// K3.3 - Explain-in-Context
+// Source: Course book section 3.3 (CredSSP credential exposure callout)
+// -----------------------------------------------------------------------------
+::K3.3 CredSSP risk::[html]<p>The course identifies a specific security tradeoff that makes CredSSP unsuitable for high-value production accounts. What is that tradeoff?</p>{
+    =The intermediate machine receives the user's full credential, not just an authentication token. If the intermediate machine is compromised, the credential is compromised. # Correct. The course states this exactly: CredSSP exposes credentials to the intermediate machine.
+    ~CredSSP requires opening additional firewall ports beyond standard WinRM. # Incorrect. CredSSP uses the same WinRM transport ports; port exposure is not the named tradeoff.
+    ~CredSSP only works between machines running the same version of Windows. # Incorrect. CredSSP is not version-locked in this way.
+    ~CredSSP encrypts credentials with a deprecated algorithm. # Incorrect. The named risk is credential exposure to the intermediate, not cryptographic weakness.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K4 - Language Modes
+
+// -----------------------------------------------------------------------------
+// K4.1 - Differentiation
+// Source: Course book section 3.5 (Language Modes table)
+// -----------------------------------------------------------------------------
+::K4.1 ConstrainedLanguage characterization::[html]<p>According to the course, which statement BEST describes ConstrainedLanguage mode?</p>{
+    =Most cmdlets work, but type acceleration, .NET method calls, and other advanced features are blocked. Common in hardened environments and AppLocker scenarios. # Correct. The course book describes ConstrainedLanguage as "the interesting one" with exactly this behavior.
+    ~All PowerShell features are available; ConstrainedLanguage is the default on most workstations. # Incorrect. That is FullLanguage, not ConstrainedLanguage.
+    ~The PowerShell engine is effectively disabled; only specific cmdlets execute. # Incorrect. That is NoLanguage.
+    ~PowerShell is limited to a small set of cmdlets used by some constrained UI environments. # Incorrect. That is RestrictedLanguage.
+}
+
+// -----------------------------------------------------------------------------
+// K4.2 - Differentiation
+// Source: Course book section 3.5 (Checking your current language mode)
+// -----------------------------------------------------------------------------
+::K4.2 Checking the language mode::[html]<p>Which expression returns the language mode of the current PowerShell session?</p>{
+    =<code>$ExecutionContext.SessionState.LanguageMode</code> # Correct. The course book specifies this as the canonical mechanism for inspecting the current language mode.
+    ~<code>Get-ExecutionPolicy</code> # Incorrect. Get-ExecutionPolicy returns the script execution policy, which is unrelated to language mode.
+    ~<code>$Host.LanguageMode</code> # Incorrect. The $Host automatic variable does not expose a LanguageMode property.
+    ~<code>Get-PSLanguageMode</code> # Incorrect. Get-PSLanguageMode is not a PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K4.3 - Differentiation
+// Source: Course book section 3.5 (ConstrainedLanguage failures look like script bugs)
+// -----------------------------------------------------------------------------
+::K4.3 Diagnosing ConstrainedLanguage::[html]<p>A script that works on Ops fails on a hardened customer host with the message "Cannot invoke method. Method invocation is supported only on core types in this language mode." What is the most likely cause?</p>{
+    =The host is enforcing ConstrainedLanguage, which blocks .NET method calls used in the script. The script logic is fine; host policy is restricting it. # Correct. The course book describes this exact error message as the signature ConstrainedLanguage symptom.
+    ~The script has a syntax error that only manifests on certain hosts. # Incorrect. The error is host-policy specific, not a syntax issue.
+    ~The .NET runtime version on the host is too old for the methods being called. # Incorrect. The error message is specific to language mode enforcement, not runtime versioning.
+    ~The user lacks permission to load the .NET assemblies the script requires. # Incorrect. The error is about language mode, not assembly load permissions.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K5 - Performance Techniques and Parallel Jobs
+
+// -----------------------------------------------------------------------------
+// K5.1 - Recall and Application
+// Source: Course book section 4.3 (Basic job lifecycle)
+// -----------------------------------------------------------------------------
+::K5.1 Job lifecycle::[html]<p>You start a background job with <code>Start-Job</code>. According to the course pattern, what is the correct sequence to monitor, retrieve output from, and clean up the job?</p>{
+    =<code>Wait-Job</code>, <code>Receive-Job</code>, <code>Remove-Job</code> # Correct. The course's canonical lifecycle is: started, waited on, received, removed.
+    ~<code>Receive-Job</code>, <code>Wait-Job</code>, <code>Remove-Job</code> # Incorrect. Receiving before waiting may return incomplete output.
+    ~<code>Remove-Job</code>, <code>Wait-Job</code>, <code>Receive-Job</code> # Incorrect. Removing the job first deletes the output.
+    ~<code>Stop-Job</code>, <code>Get-Job</code>, <code>Receive-Job</code> # Incorrect. Stopping a job interrupts its work; this is not the lifecycle pattern.
+}
+
+// -----------------------------------------------------------------------------
+// K5.2 - Recall and Application
+// Source: Course book section 4.2 (Improving Efficiency Before Parallelizing)
+// -----------------------------------------------------------------------------
+::K5.2 Optimize before parallelizing::[html]<p>A teammate's script takes 30 seconds to query four targets sequentially. They want to make it faster by switching to jobs. According to the course, what should you ask them BEFORE agreeing that jobs are the answer?</p>{
+    =Whether the script is already doing only the work that needs to be done. Parallelizing waste is still waste. # Correct. Section 4.2 explicitly establishes that improving efficiency precedes parallelization, with this exact framing.
+    ~Whether they have administrator privileges on the four targets. # Incorrect. Permissions matter for execution but not for the optimize-vs-parallelize decision.
+    ~Whether the script outputs to a network share or to a local file. # Incorrect. Output destination is not the central efficiency question.
+    ~Whether they have measured the script with a profiler tool. # Incorrect. The course teaches Measure-Command, not external profilers, and the prior question is design, not tooling.
+}
+
+// -----------------------------------------------------------------------------
+// K5.3 - Recall and Application
+// Source: Course book section 4.1 (Measure-Command)
+// -----------------------------------------------------------------------------
+::K5.3 Measuring runtime::[html]<p>Which cmdlet does the course identify as the standard tool for establishing a performance baseline of a script?</p>{
+    =<code>Measure-Command</code> # Correct. Section 4.1 establishes Measure-Command as the standard baselining tool for the course.
+    ~<code>Get-Counter</code> # Incorrect. Get-Counter retrieves performance counter data; it is not the course's chosen baselining tool for script execution time.
+    ~<code>Trace-Command</code> # Incorrect. Trace-Command produces tracing output for debugging command pipeline behavior, not wall-clock measurement.
+    ~<code>Start-Transcript</code> # Incorrect. Start-Transcript captures session output to a file; it does not measure execution time.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K6 - Attacker Techniques and Defenses
+
+// -----------------------------------------------------------------------------
+// K6.1 - Differentiation
+// Source: Course book section 3.6 (How PowerShell is abused)
+// -----------------------------------------------------------------------------
+::K6.1 Encoded commands::[html]<p>Which abuse pattern does the course identify as the use of <code>powershell.exe -EncodedCommand [BASE64]</code> to evade simple string-match detections?</p>{
+    =Encoded commands — used to bypass logging assumptions, obscure intent, and bypass simple string-match detections. # Correct. The course's table of abuse patterns names this specifically.
+    ~Lateral movement — moving between systems after initial access. # Incorrect. Lateral movement is a separate pattern in the table; encoded commands serve evasion, not lateral movement on their own.
+    ~Constrained Language bypass — escaping a restricted language mode. # Incorrect. Constrained Language bypass is a separate listed pattern.
+    ~Download cradles — fetching and executing a payload from a remote URL. # Incorrect. Download cradles are a separate listed pattern; encoding alone does not constitute fetching content from a URL.
+}
+
+// -----------------------------------------------------------------------------
+// K6.2 - Differentiation
+// Source: Course book section 3.6 (How defenders watch for abuse)
+// -----------------------------------------------------------------------------
+::K6.2 Script Block Logging Event ID::[html]<p>The course identifies one Windows Event ID as the most important logging signal for defenders watching PowerShell activity, because it captures the actual code that executed even after deobfuscation. Which Event ID is it?</p>{
+    =4104 (Script Block Logging in the Microsoft-Windows-PowerShell/Operational log) # Correct. The course explicitly identifies Event ID 4104 in the defenders' tooling table.
+    ~4624 (successful logon) # Incorrect. 4624 is in the Security log and tracks logons, not PowerShell script blocks.
+    ~4103 (Module Logging) # Incorrect. The course mentions 4103 for module logging, but identifies 4104 (Script Block Logging) as the most important signal.
+    ~4688 (process creation) # Incorrect. 4688 captures process creation in the Security log; PowerShell script content is captured by 4104 specifically.
+}
+
+// -----------------------------------------------------------------------------
+// K6.3 - Differentiation
+// Source: Course book section 3.6 (MITRE ATT&CK mapping)
+// -----------------------------------------------------------------------------
+::K6.3 MITRE ATT&CK mapping::[html]<p>According to the course, which MITRE ATT&CK technique is the umbrella technique for adversary use of PowerShell?</p>{
+    =T1059.001 - Command and Scripting Interpreter: PowerShell # Correct. The course explicitly names T1059.001 as the umbrella technique for PowerShell abuse.
+    ~T1027 - Obfuscated Files or Information # Incorrect. The course names T1027 as the technique for encoded commands and string obfuscation specifically, not as the umbrella.
+    ~T1078 - Valid Accounts # Incorrect. T1078 covers credential abuse generally; it is not the PowerShell umbrella technique.
+    ~T1003 - OS Credential Dumping # Incorrect. T1003 covers credential dumping; it is not the PowerShell umbrella technique.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K7 - Desired State Configuration
+
+// -----------------------------------------------------------------------------
+// K7.1 - Recognition
+// Source: Course book section 3.7 (DSC declarative paradigm)
+// -----------------------------------------------------------------------------
+::K7.1 DSC paradigm::[html]<p>How does the course characterize PowerShell DSC as a configuration management approach?</p>{
+    =Declarative — you write a configuration that says what state the system should be in, and DSC's job is to make the system match. # Correct. Section 3.7 describes DSC declaratively: "IIS should be installed" rather than "install IIS."
+    ~Imperative — you write step-by-step instructions for the system to follow. # Incorrect. The course explicitly contrasts DSC against the imperative "install IIS" approach.
+    ~Reactive — DSC applies configuration only when triggered by a system event. # Incorrect. DSC enforces state on a schedule or on demand; it is not event-reactive.
+    ~Discovery-based — DSC inspects the system and writes configuration files based on what it finds. # Incorrect. DSC consumes configuration; it does not generate configuration from observed state.
+}
+
+// -----------------------------------------------------------------------------
+// K7.2 - Recognition
+// Source: Course book section 3.7 (DSC course-scope reminder)
+// -----------------------------------------------------------------------------
+::K7.2 DSC course scope::[html]<p>According to the course, which statement BEST describes when an operator should reach for DSC?</p>{
+    =For fleet-wide configuration management of many systems kept in a known state; for one-off scripts targeting a handful of systems, DSC is overkill. # Correct. Section 3.7 makes this scope guidance explicit.
+    ~Whenever a script needs to run on more than one remote system. # Incorrect. The course explicitly says imperative remoting handles small target counts; DSC is for fleet-wide management.
+    ~As the primary mechanism inside the course capstone, since the capstone is graded on configuration management. # Incorrect. The course explicitly states the capstone uses imperative remoting, not DSC.
+    ~Whenever PowerShell remoting via WinRM is unavailable. # Incorrect. DSC and WinRM remoting are not substitutes for each other.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K8 - Common Remote Execution Problems
+
+// -----------------------------------------------------------------------------
+// K8.1 - Explain-in-Context
+// Source: Course book section 3.4 (symptom-to-cause table)
+// -----------------------------------------------------------------------------
+::K8.1 Credential format::[html]<p>An operator on the CVTE domain-based range receives "Access denied" when running an interactive remote command. Their credential at the prompt was entered as <code>student01</code> with no domain qualifier. According to the course, what is the most likely cause?</p>{
+    =Without a domain qualifier, Windows resolved the username against the local account database on the operator's workstation rather than the domain, so authentication did not occur as the intended domain user. # Correct. The course explicitly describes this credential-format trap in 3.4.
+    ~The student01 account was locked out by repeated failed logon attempts. # Incorrect. The named cause in the course is credential resolution, not lockout.
+    ~The remote system requires multifactor authentication that PowerShell cannot satisfy. # Incorrect. MFA is not the named cause for the bare-username scenario in the course.
+    ~The Kerberos ticket lifetime expired between when the credential was prompted and when the command executed. # Incorrect. Ticket lifetime is not the cause described in the course for this scenario.
+}
+
+// -----------------------------------------------------------------------------
+// K8.2 - Explain-in-Context
+// Source: Course book section 4.4 (Scope, Imports, and Inputs in Jobs)
+// -----------------------------------------------------------------------------
+::K8.2 Function not found in job::[html]<p>An operator defines a function in their console session, then calls <code>Start-Job -ScriptBlock { MyFunction }</code>. The job fails with "term is not recognized." What is the cause and the standard fix from the course?</p>{
+    =Jobs run in a separate session context that does not inherit functions or modules from the parent. The fix is to define the function inside the script block, or pass the module path as an argument and import it inside the script block. # Correct. Section 4.4 describes this exact failure mode and the canonical fix.
+    ~The function name violates PowerShell's verb-noun naming convention; the job rejects it as malformed. # Incorrect. Naming convention violations produce warnings, not "term is not recognized" errors.
+    ~The execution policy on the local host blocks function definitions inside script blocks. # Incorrect. Execution policy does not block function definitions in this way.
+    ~Background jobs require all functions to be defined as advanced functions with <code>[CmdletBinding()]</code>. # Incorrect. Job script blocks accept any callable construct; the issue is scope, not function form.
+}
+
+// -----------------------------------------------------------------------------
+// K8.3 - Explain-in-Context
+// Source: Course book section 3.4 (symptom-to-cause table)
+// -----------------------------------------------------------------------------
+::K8.3 Path not found remotely::[html]<p>A script runs successfully against the local Ops workstation but fails when targeted at a remote system with "Cannot find path." According to the course's symptom-to-cause table, what is the first thing to check?</p>{
+    =Whether the path exists on the target system. The path may exist on Ops but not on the target. Verify with <code>Invoke-Command { Test-Path ... }</code>. # Correct. Section 3.4's table maps "Path not found" to "Path exists on Ops but not on target," with this exact remediation.
+    ~Whether WinRM is enabled on the target. # Incorrect. WinRM connectivity issues produce a different symptom (connection failure, not path-not-found).
+    ~Whether the user's credential was entered with a domain qualifier. # Incorrect. Credential format issues produce Access denied, not path-not-found.
+    ~Whether the target is running the same PowerShell edition as Ops. # Incorrect. Edition differences produce other symptoms; the course maps this specific symptom to path existence.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K9 - Script Repurposing
+
+// -----------------------------------------------------------------------------
+// K9.1 - Recall and Application
+// Source: Course book section 5.10 (capstone "adapt, not copy" framing)
+// -----------------------------------------------------------------------------
+::K9.1 Adapting the pattern::[html]<p>The course teaches a remote-query function pattern that is reused across the capstone. When repurposing this pattern for a new task, which part of the function should change?</p>{
+    =The script block contents (the actual cmdlet and query) change; the parameter declaration, try/catch wrapper, and return-object shape stay fixed. # Correct. Section 5.1 explicitly frames the wrapper as fixed and the script block as the placeholder; section 5.10 reinforces this with the capstone mapping table.
+    ~The function name and the script block change; the return shape changes for each function to match the data being returned. # Incorrect. The course explicitly requires consistent return shape across functions for orchestrator compatibility.
+    ~The parameter declaration changes for each function; the script block stays generic. # Incorrect. The course standardizes on -ComputerName and -Credential parameters for capstone functions.
+    ~The try/catch wrapper changes to handle the specific exceptions each cmdlet might throw. # Incorrect. The course's pattern uses a generic catch that captures any exception message; the wrapper does not change per cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K9.2 - Recall and Application
+// Source: Course book section 5.10 (capstone mapping table)
+// -----------------------------------------------------------------------------
+::K9.2 Repurposing for the capstone::[html]<p>A Chapter 5 practice function called <code>Get-RemoteTaskInfo</code> queries scheduled tasks on a remote system. The capstone function <code>Get-RemoteProcessInventory</code> queries running processes. According to the course, what is the relationship between these two functions?</p>{
+    =Same pattern, different cmdlet inside the script block. The wrapper, parameters, and return shape are identical; only the inner query changes. # Correct. Section 5.10's mapping table presents this exact relationship.
+    ~Different patterns. <code>Get-RemoteProcessInventory</code> requires a fundamentally different structure for the capstone. # Incorrect. The course explicitly says the capstone is a recombination, not a rewrite.
+    ~Same function. The capstone allows submitting <code>Get-RemoteTaskInfo</code> renamed as <code>Get-RemoteProcessInventory</code>. # Incorrect. The course explicitly warns against submitting practice modules as the capstone deliverable.
+    ~Unrelated functions. The Chapter 5 practice work has no direct connection to the capstone. # Incorrect. The course explicitly frames Chapter 5 as the capstone dress rehearsal.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K10 - API Interactions
+
+// -----------------------------------------------------------------------------
+// K10.1 - Recognition
+// Source: Course book section 3.7 (REST APIs)
+// -----------------------------------------------------------------------------
+::K10.1 REST API cmdlet::[html]<p>Which PowerShell cmdlet does the course identify for invoking a REST API and receiving the response as parsed PowerShell objects?</p>{
+    =<code>Invoke-RestMethod</code> # Correct. Section 3.7 names Invoke-RestMethod and notes it returns parsed JSON or XML directly as PowerShell objects.
+    ~<code>Invoke-WebRequest</code> # Incorrect. Invoke-WebRequest returns the raw HTTP response (status, headers, content body); it does not parse the response body into objects.
+    ~<code>Send-WebRequest</code> # Incorrect. Send-WebRequest is not a PowerShell cmdlet.
+    ~<code>Get-RestMethod</code> # Incorrect. Get-RestMethod is not a PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K10.2 - Recognition
+// Source: Course book section 3.7 (bearer token example)
+// -----------------------------------------------------------------------------
+::K10.2 Bearer token authentication::[html]<p>The course shows a REST API call that authenticates with a bearer token. How is the token passed to <code>Invoke-RestMethod</code>?</p>{
+    =Through a hashtable assigned to the <code>-Headers</code> parameter, with an entry such as <code>Authorization = "Bearer $Token"</code>. # Correct. Section 3.7 shows exactly this pattern.
+    ~As a query string parameter appended to the URL. # Incorrect. The course does not use this pattern; tokens belong in headers, not URLs.
+    ~Through the <code>-Credential</code> parameter as a PSCredential object. # Incorrect. PSCredential is for username/password, not bearer tokens.
+    ~Embedded in the request body as a JSON property. # Incorrect. Bearer tokens go in the Authorization header, not the body.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K11 - Microsoft Azure Integration
+
+// -----------------------------------------------------------------------------
+// K11.1 - Recognition
+// Source: Course book section 3.7 (Other platform integrations)
+// -----------------------------------------------------------------------------
+::K11.1 Az module::[html]<p>According to the course, what is the purpose of PowerShell modules in the <code>Az.*</code> family?</p>{
+    =They wrap Microsoft Azure REST APIs as PowerShell cmdlets, allowing Azure resources to be managed using PowerShell patterns. # Correct. Section 3.7 describes Az.* modules as cloud-provider PowerShell modules that wrap their REST APIs.
+    ~They provide a local emulator for Azure services so scripts can run without an Azure subscription. # Incorrect. Az.* modules call live Azure; emulators are separate tools.
+    ~They authenticate PowerShell sessions to Active Directory in hybrid Azure/AD environments. # Incorrect. Az.* manages Azure resources; AD authentication is handled by other modules.
+    ~They convert PowerShell scripts into Azure Logic Apps. # Incorrect. Az.* modules are interaction tools, not script-conversion tools.
+}
+
+// -----------------------------------------------------------------------------
+// K11.2 - Recognition
+// Source: Course book section 3.7 (Platform integrations - same patterns apply)
+// -----------------------------------------------------------------------------
+::K11.2 Cloud module patterns::[html]<p>According to the course, when you use a cloud provider's PowerShell module (such as <code>Az.*</code> or <code>AWS.Tools.*</code>) to query cloud resources, the patterns from the rest of the course apply. Specifically, what does the course say differs from one cloud provider to another, and what stays the same?</p>{
+    =Authentication mechanics differ between providers; the broader pattern of "set up authentication, call the endpoint, work with the returned objects" stays the same. # Correct. Section 3.7 explicitly frames it this way: provider-specific authentication, but the overall pattern is consistent.
+    ~The cmdlet syntax differs between providers; the authentication mechanism is the same across all clouds. # Incorrect. The course says the opposite: authentication differs, the pattern is the same.
+    ~Both authentication and cmdlet syntax differ; nothing transfers between cloud providers. # Incorrect. The course explicitly says the patterns transfer.
+    ~Both authentication and cmdlet syntax are standardized across providers; only the endpoint URLs differ. # Incorrect. There is no cross-cloud cmdlet standard.
+}
+
+// =============================================================================
+// END OF EXAM
+// Total questions: 29
+// Distribution check (target per Section 9.2 of WRE-SCOPE-001):
+//   K1: 3  (target 2-3) OK
+//   K2: 3  (target 2-3) OK
+//   K3: 3  (target 2-3) OK
+//   K4: 3  (target 2-3) OK
+//   K5: 3  (target 2-3) OK
+//   K6: 3  (target 2-3) OK
+//   K7: 2  (target 2)   OK
+//   K8: 3  (target 2-3) OK
+//   K9: 2  (target 2)   OK
+//   K10: 2 (target 2)   OK
+//   K11: 2 (target 2)   OK
+// Total: 29 (within 25-30 contract bound)
+//
+// All questions have exactly one = (correct) line per Section 11.1(b)
+// of the Written Assessment Scope Contract.
+// =============================================================================
