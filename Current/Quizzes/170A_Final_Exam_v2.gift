@@ -279,7 +279,7 @@ $CATEGORY: $course$/170A_WOAC_Final/K8 - Common Remote Execution Problems
 // K8.2 - Explain-in-Context
 // Source: Course book section 4.4 (Scope, Imports, and Inputs in Jobs)
 // -----------------------------------------------------------------------------
-::K8.2 Function not found in job::[html]<p>An operator defines a function in their console session, then calls <code>Start-Job -ScriptBlock { MyFunction }</code>. The job fails with "term is not recognized." What is the cause and the standard fix from the course?</p>{
+::K8.2 Function not found in job::[html]<p>An operator defines a function in their console session, then dispatches it via <code>Start-Job</code> with a script block that calls the function by name. The job fails with "term is not recognized." What is the cause and the standard fix from the course?</p>{
     =Jobs run in a separate session context that does not inherit functions or modules from the parent. The fix is to define the function inside the script block, or pass the module path as an argument and import it inside the script block. # Correct. Section 4.4 describes this exact failure mode and the canonical fix.
     ~The function name violates PowerShell's verb-noun naming convention; the job rejects it as malformed. # Incorrect. Naming convention violations produce warnings, not "term is not recognized" errors.
     ~The execution policy on the local host blocks function definitions inside script blocks. # Incorrect. Execution policy does not block function definitions in this way.
@@ -291,7 +291,7 @@ $CATEGORY: $course$/170A_WOAC_Final/K8 - Common Remote Execution Problems
 // Source: Course book section 3.4 (symptom-to-cause table)
 // -----------------------------------------------------------------------------
 ::K8.3 Path not found remotely::[html]<p>A script runs successfully against the local Ops workstation but fails when targeted at a remote system with "Cannot find path." According to the course's symptom-to-cause table, what is the first thing to check?</p>{
-    =Whether the path exists on the target system. The path may exist on Ops but not on the target. Verify with <code>Invoke-Command { Test-Path ... }</code>. # Correct. Section 3.4's table maps "Path not found" to "Path exists on Ops but not on target," with this exact remediation.
+    =Whether the path exists on the target system. The path may exist on Ops but not on the target. Verify by running <code>Test-Path</code> on the target via <code>Invoke-Command</code>. # Correct. Section 3.4's table maps "Path not found" to "Path exists on Ops but not on target," with this exact remediation.
     ~Whether WinRM is enabled on the target. # Incorrect. WinRM connectivity issues produce a different symptom (connection failure, not path-not-found).
     ~Whether the user's credential was entered with a domain qualifier. # Incorrect. Credential format issues produce Access denied, not path-not-found.
     ~Whether the target is running the same PowerShell edition as Ops. # Incorrect. Edition differences produce other symptoms; the course maps this specific symptom to path existence.
