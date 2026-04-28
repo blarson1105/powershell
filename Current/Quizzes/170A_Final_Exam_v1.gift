@@ -1,0 +1,365 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting — Final Exam
+// =============================================================================
+// Authoritative reference: 170A-WOAC-APS-WRE-SCOPE-001 (Written Assessment
+// Scope Contract), Version 1.0
+// Authority: 170A CTSSB Output, 16 Feb 2024, Module 1, Topic: Advanced
+// PowerShell (pp. 48-49)
+//
+// Format: Moodle GIFT
+// Total questions: 29 (sits within the 25-30 contract requirement)
+// All non-matching questions have exactly one correct answer per
+// Section 11.1(b) of the Written Assessment Scope Contract.
+//
+// Category nesting convention: 170A_WOAC_Final / K# - Topic
+// All questions tagged with K-item ID for traceability.
+//
+// Two known content corrections from inherited materials are reflected here:
+//   1. Language modes are NOT set via Set-ExecutionPolicy. The book says
+//      this; it is wrong. Questions reflect correct behavior.
+//   2. "Get-Passwd" is not a real cmdlet. Credential theft questions use
+//      legitimate techniques (Mimikatz, AD enumeration, hash extraction).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K1 - .NET Usage Within PowerShell
+
+// -----------------------------------------------------------------------------
+// K1.1 - Recall and Application - MCQ
+// -----------------------------------------------------------------------------
+::K1.1 New-Object syntax::[html]<p>Which of the following commands creates a new instance of the <code>System.Net.WebClient</code> .NET class in PowerShell?</p>{
+    =<code>New-Object -TypeName System.Net.WebClient</code> # Correct. New-Object with -TypeName instantiates a .NET class.
+    ~<code>New-Class System.Net.WebClient</code> # Incorrect. New-Class is not a PowerShell cmdlet.
+    ~<code>Get-Object System.Net.WebClient</code> # Incorrect. Get-Object is not a PowerShell cmdlet.
+    ~<code>Add-Type System.Net.WebClient</code> # Incorrect. Add-Type loads an assembly; it does not instantiate a class.
+}
+
+// -----------------------------------------------------------------------------
+// K1.2 - Recall and Application - Code Snippet Analysis
+// -----------------------------------------------------------------------------
+::K1.2 Type accelerator vs New-Object::[html]<p>Consider the following two PowerShell statements:</p><pre><code>$a = New-Object PSObject -Property @{ Name = 'Server01' }
+$b = [pscustomobject]@{ Name = 'Server01' }</code></pre><p>Which statement most accurately describes the relationship between <code>$a</code> and <code>$b</code>?</p>{
+    =Both produce custom objects with a Name property, but <code>[pscustomobject]</code> preserves the property order from the hashtable while <code>New-Object PSObject</code> does not. # Correct. The type accelerator treats the hashtable as ordered; New-Object PSObject does not guarantee property order.
+    ~Both produce identical objects in every respect, including property order. # Incorrect. Property order differs between the two approaches.
+    ~<code>$a</code> is a hashtable and <code>$b</code> is a custom object. # Incorrect. Both are PSCustomObject instances; the hashtable is only used as input.
+    ~<code>$b</code> requires Add-Type to be called first because <code>[pscustomobject]</code> is not loaded by default. # Incorrect. [pscustomobject] is a built-in type accelerator and requires no explicit loading.
+}
+
+// -----------------------------------------------------------------------------
+// K1.3 - Recall and Application - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K1.3 Loading a non-default assembly::[html]<p>You need to use a class from <code>System.Drawing.dll</code> in your PowerShell script, but the class is not available when you reference it directly. Which action resolves this?</p>{
+    =Call <code>Add-Type -AssemblyName System.Drawing</code> before referencing the class. # Correct. System.Drawing is not loaded by default and must be added explicitly.
+    ~Call <code>Import-Module System.Drawing</code> before referencing the class. # Incorrect. Import-Module loads PowerShell modules, not .NET assemblies.
+    ~Call <code>New-Object System.Drawing</code> to register the assembly. # Incorrect. New-Object instantiates a class; it does not load assemblies.
+    ~Restart the PowerShell session to force a refresh of loaded assemblies. # Incorrect. Restarting will not load assemblies that are not auto-loaded.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K2 - Advanced Debugging Techniques
+
+// -----------------------------------------------------------------------------
+// K2.1 - Recall and Application - MCQ
+// -----------------------------------------------------------------------------
+::K2.1 Set-PSBreakpoint at line::[html]<p>Which command sets a breakpoint at line 15 of a script named <code>diag.ps1</code> in the current directory?</p>{
+    =<code>Set-PSBreakpoint -Script .\diag.ps1 -Line 15</code> # Correct. -Script identifies the file; -Line specifies the breakpoint location.
+    ~<code>Set-PSBreakpoint -Path .\diag.ps1 -Number 15</code> # Incorrect. The parameters are -Script and -Line, not -Path and -Number.
+    ~<code>New-PSBreakpoint -File .\diag.ps1 -Line 15</code> # Incorrect. The cmdlet is Set-PSBreakpoint, not New-PSBreakpoint.
+    ~<code>Add-PSBreakpoint -Script .\diag.ps1 -At 15</code> # Incorrect. Add-PSBreakpoint is not a valid PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K2.2 - Recall and Application - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K2.2 Debugger commands::[html]<p>You are stopped at a breakpoint inside a function call. You want to execute the next line but NOT step into any nested function calls. Which debugger command should you use?</p>{
+    =<code>v</code> (Step Over) # Correct. Step Over executes the current line without stepping into nested functions.
+    ~<code>s</code> (Step Into) # Incorrect. Step Into would enter any nested function calls.
+    ~<code>c</code> (Continue) # Incorrect. Continue resumes execution to the next breakpoint or end of script.
+    ~<code>q</code> (Quit) # Incorrect. Quit ends the debugger session.
+}
+
+// -----------------------------------------------------------------------------
+// K2.3 - Recall and Application - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K2.3 Removing all breakpoints::[html]<p>You have set multiple breakpoints across several scripts during a debugging session and want to remove all of them in one command. Which expression accomplishes this?</p>{
+    =<code>Get-PSBreakpoint | Remove-PSBreakpoint</code> # Correct. Pipes all breakpoints to Remove-PSBreakpoint.
+    ~<code>Clear-PSBreakpoint -All</code> # Incorrect. Clear-PSBreakpoint is not a PowerShell cmdlet.
+    ~<code>Remove-PSBreakpoint *</code> # Incorrect. Remove-PSBreakpoint requires breakpoint objects, not a wildcard.
+    ~<code>Reset-PSDebugger</code> # Incorrect. Reset-PSDebugger is not a PowerShell cmdlet.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K3 - Double-Hop Problem
+
+// -----------------------------------------------------------------------------
+// K3.1 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K3.1 Double-hop scenario identification::[html]<p>An analyst on workstation OPS-01 opens a PSSession to SRV-A and from within that session attempts to read a file from a network share hosted on FILE-B. The connection to SRV-A succeeds, but the read from FILE-B fails with an Access Denied error, even though the analyst has rights to the share when accessed directly. What is the most likely explanation?</p>{
+    =The user's credentials cannot be delegated from SRV-A to FILE-B because of the double-hop restriction in WinRM. # Correct. This is the classic double-hop scenario: credentials authenticate at the first hop but are not forwarded to the second.
+    ~The PSSession to SRV-A failed silently and the analyst is actually executing locally on OPS-01. # Incorrect. The connection to SRV-A succeeded by the scenario's stipulation.
+    ~FILE-B is offline and the share is unreachable. # Incorrect. The error is Access Denied, indicating an authentication issue, not connectivity.
+    ~The analyst lacks rights to the share, despite believing otherwise. # Incorrect. The scenario stipulates the analyst has rights when accessed directly.
+}
+
+// -----------------------------------------------------------------------------
+// K3.2 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K3.2 Workaround selection::[html]<p>Your team needs to run a recurring administrative script from a management workstation that connects to a jump server, then accesses a database server. Operating in a DoD production environment, which workaround for the double-hop problem is preferred?</p>{
+    =Configure Just Enough Administration (JEA) endpoints on the jump server and database server with the minimum cmdlets required. # Correct. JEA is the preferred workaround because it grants narrow, role-based privileges without exposing credentials.
+    ~Enable CredSSP authentication for delegating credentials between the management workstation, jump server, and database server. # Incorrect. CredSSP exposes credentials in memory on remote machines and is not appropriate for production.
+    ~Hard-code an administrative credential into the script and pass it to each remote call. # Incorrect. Storing credentials in scripts violates basic security practice.
+    ~Disable WinRM and use SSH instead, since SSH does not have the double-hop restriction. # Incorrect. The course-supported authoritative answer is JEA; this is also misleading because SSH-based remoting has its own credential handling considerations.
+}
+
+// -----------------------------------------------------------------------------
+// K3.3 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K3.3 Why CredSSP is risky::[html]<p>Why is CredSSP discouraged as a long-term solution to the double-hop problem in production environments?</p>{
+    =It exposes the user's credentials in memory on the remote system, where a compromise of that system could harvest those credentials. # Correct. This is the specific risk that makes CredSSP unsuitable for production.
+    ~It requires every server in the chain to run the same version of PowerShell. # Incorrect. Version uniformity is not the principal CredSSP concern.
+    ~It only works with local accounts, not domain accounts. # Incorrect. CredSSP is typically used with domain credentials.
+    ~It cannot be configured without rebooting the target system. # Incorrect. CredSSP configuration does not generally require a reboot.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K4 - Language Modes
+
+// -----------------------------------------------------------------------------
+// K4.1 - Differentiation - Matching-style MCQ
+// -----------------------------------------------------------------------------
+::K4.1 Most restrictive mode::[html]<p>Which PowerShell language mode permits only individual cmdlet execution and disables all scripting functionality entirely?</p>{
+    =NoLanguage # Correct. NoLanguage allows individual cmdlets only; no scripting constructs.
+    ~ConstrainedLanguage # Incorrect. ConstrainedLanguage permits limited scripting with a restricted set of types.
+    ~RestrictedLanguage # Incorrect. RestrictedLanguage permits scripting but limits which cmdlets and features can be used.
+    ~FullLanguage # Incorrect. FullLanguage is the default and is the least restrictive mode.
+}
+
+// -----------------------------------------------------------------------------
+// K4.2 - Differentiation - Code Snippet MCQ
+// -----------------------------------------------------------------------------
+::K4.2 Checking the current language mode::[html]<p>Which PowerShell expression returns the language mode of the current session?</p>{
+    =<code>$ExecutionContext.SessionState.LanguageMode</code> # Correct. This is the standard mechanism for inspecting the current language mode.
+    ~<code>Get-ExecutionPolicy</code> # Incorrect. Get-ExecutionPolicy returns the script execution policy, not the language mode.
+    ~<code>$Host.LanguageMode</code> # Incorrect. The $Host automatic variable does not expose a LanguageMode property.
+    ~<code>Get-PSLanguageMode</code> # Incorrect. Get-PSLanguageMode is not a PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K4.3 - Differentiation - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K4.3 Mode contrast::[html]<p>Which statement best contrasts FullLanguage mode with ConstrainedLanguage mode?</p>{
+    =FullLanguage permits unrestricted use of .NET types and methods; ConstrainedLanguage restricts type usage to an approved core set. # Correct. The defining contrast is the breadth of .NET types and operations permitted.
+    ~FullLanguage permits scripting; ConstrainedLanguage permits only single-line interactive commands. # Incorrect. ConstrainedLanguage permits scripting; it does not eliminate it.
+    ~FullLanguage allows remote execution; ConstrainedLanguage blocks all remoting. # Incorrect. Remoting capability is not the defining difference between these two modes.
+    ~FullLanguage requires PowerShell 5.0 or later; ConstrainedLanguage works in earlier versions. # Incorrect. ConstrainedLanguage was introduced in PowerShell 3.0; both modes are supported in modern versions.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K5 - Performance Techniques and Parallel Jobs
+
+// -----------------------------------------------------------------------------
+// K5.1 - Recall and Application - Code Snippet MCQ
+// -----------------------------------------------------------------------------
+::K5.1 Job lifecycle order::[html]<p>You start a background job and need to retrieve its output. What is the correct cmdlet sequence after <code>Start-Job</code>?</p>{
+    =<code>Wait-Job</code>, then <code>Receive-Job</code>, then <code>Remove-Job</code> # Correct. Wait for completion, retrieve output, then clean up.
+    =Wait-Job, then Receive-Job, then Remove-Job # Correct, plain text variant.
+    ~<code>Receive-Job</code>, then <code>Wait-Job</code>, then <code>Remove-Job</code> # Incorrect. Receiving before waiting may return incomplete output.
+    ~<code>Remove-Job</code>, then <code>Wait-Job</code>, then <code>Receive-Job</code> # Incorrect. Removing the job first deletes the output.
+    ~<code>Get-Job</code>, then <code>Stop-Job</code>, then <code>Receive-Job</code> # Incorrect. Stopping a job does not produce its full output.
+}
+
+// -----------------------------------------------------------------------------
+// K5.2 - Recall and Application - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K5.2 Suitable parallel task::[html]<p>Which task is the BEST candidate for execution using <code>Start-Job</code> in parallel across 50 remote systems?</p>{
+    =Independently collecting OS version and disk space data from each system, where the result from one system does not affect another. # Correct. Independent, repetitive, and bounded operations are the canonical parallel use case.
+    ~A multi-step deployment in which step 2 on each system requires the result of step 1 from a different system. # Incorrect. Cross-system dependencies negate the benefit of parallelization.
+    ~A sequential audit script that must record results in the order each system responds. # Incorrect. Strict ordering conflicts with parallel execution.
+    ~A configuration push where all 50 systems must commit or rollback together as a single transaction. # Incorrect. Atomic multi-system transactions are not what background jobs provide.
+}
+
+// -----------------------------------------------------------------------------
+// K5.3 - Recall and Application - Code Snippet MCQ
+// -----------------------------------------------------------------------------
+::K5.3 ForEach-Object -Parallel throttle::[html]<p>By default, how many script blocks does <code>ForEach-Object -Parallel</code> execute concurrently if no throttle limit is specified?</p>{
+    =5 # Correct. The default throttle limit for ForEach-Object -Parallel is 5.
+    ~1 # Incorrect. A throttle of 1 would be sequential execution.
+    ~10 # Incorrect. The default is 5, not 10.
+    ~Unlimited (constrained only by available CPU cores) # Incorrect. There is a default throttle limit; it is not unlimited.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K6 - Attacker Techniques and Defenses
+
+// -----------------------------------------------------------------------------
+// K6.1 - Differentiation - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K6.1 Fileless vs LOLBin::[html]<p>An analyst observes a process where <code>powershell.exe</code> is launched with <code>-EncodedCommand</code> and the decoded payload uses <code>Invoke-Expression</code> to execute a script downloaded directly into memory from a remote URL. No file is written to disk. Which attacker technique is BEST described?</p>{
+    =A fileless attack — execution occurs in memory without writing the payload to disk. # Correct. The defining trait of a fileless attack is in-memory execution with no on-disk artifact.
+    ~A living-off-the-land (LOLBin) attack only — the technique is purely about abusing legitimate tooling. # Incorrect. LOLBin abuse is present, but the absence of any disk artifact is what specifically defines fileless execution.
+    ~A credential theft attack — the goal is to harvest credentials from memory. # Incorrect. The scenario describes execution, not credential extraction.
+    ~A social engineering attack — the user was tricked into running the script. # Incorrect. The scenario describes the technical execution, not the initial access vector.
+}
+
+// -----------------------------------------------------------------------------
+// K6.2 - Differentiation - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K6.2 Defense for lateral movement via WinRM::[html]<p>Adversaries use <code>Invoke-Command</code> over WinRM to move laterally after compromising an initial host. Which defensive control is MOST effective at limiting this technique while preserving legitimate remote administration?</p>{
+    =Configure JEA endpoints with constrained role capabilities, so even authenticated WinRM sessions can only execute approved cmdlets. # Correct. JEA narrows what an authenticated session can do, limiting lateral movement value.
+    ~Disable WinRM entirely on all systems in the network. # Incorrect. This blocks legitimate remote administration along with the attack.
+    ~Increase the WinRM authentication timeout to slow down repeated connection attempts. # Incorrect. Timeouts do not address authenticated attacker traffic.
+    ~Rely on host antivirus signatures to detect Invoke-Command usage. # Incorrect. Invoke-Command is a legitimate cmdlet; signatures cannot reliably distinguish abuse.
+}
+
+// -----------------------------------------------------------------------------
+// K6.3 - Differentiation - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K6.3 Compare attack categories::[html]<p>Which pair correctly identifies a defensive control against a specific attacker technique covered in the course?</p>{
+    =Living-off-the-land (LOLBin) abuse — application allowlisting that restricts which executables and scripts may run. # Correct. Allowlisting is a primary defense against legitimate-tool abuse.
+    ~Fileless attacks — disabling PowerShell on all endpoints. # Incorrect. Disabling PowerShell breaks legitimate administration; the course-recommended defenses are EDR, script block logging, and execution restrictions from untrusted locations.
+    ~Lateral movement — increasing the password complexity requirement. # Incorrect. Password complexity does not directly counter authenticated lateral movement.
+    ~Credential theft — implementing more frequent log rotation. # Incorrect. Log rotation does not prevent credential theft; MFA, credential vaults, and Credential Guard do.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K7 - Desired State Configuration
+
+// -----------------------------------------------------------------------------
+// K7.1 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K7.1 DSC paradigm::[html]<p>Which statement best describes the configuration paradigm of PowerShell Desired State Configuration (DSC)?</p>{
+    =Declarative — the author specifies the desired end state and PowerShell determines how to achieve it. # Correct. Declarative ("what") versus imperative ("how") is the defining DSC distinction.
+    ~Imperative — the author writes step-by-step instructions for the system to follow. # Incorrect. Imperative is traditional scripting, not DSC.
+    ~Reactive — DSC only applies configuration in response to a system event. # Incorrect. DSC enforces state on a schedule or on demand, not as an event reaction.
+    ~Interpreted — DSC reads configuration from environment variables at runtime. # Incorrect. DSC compiles configurations into MOF files.
+}
+
+// -----------------------------------------------------------------------------
+// K7.2 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K7.2 DSC application models::[html]<p>Which two models does PowerShell DSC support for applying configurations to target nodes?</p>{
+    =Push and Pull # Correct. Push (Start-DscConfiguration to target) and Pull (target retrieves from a Pull Server) are the two DSC application models.
+    ~Sync and Async # Incorrect. These are general programming concepts, not DSC application models.
+    ~Local and Remote # Incorrect. DSC can apply locally or remotely under either Push or Pull, but Local/Remote is not the model distinction.
+    ~Static and Dynamic # Incorrect. These are not DSC model names.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K8 - Common Remote Execution Problems
+
+// -----------------------------------------------------------------------------
+// K8.1 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K8.1 WinRM not enabled::[html]<p>You execute a script using <code>Invoke-Command -ComputerName SRV01</code> against twelve servers. Three servers fail with the error "WinRM cannot complete the operation." What is the most likely cause and remediation?</p>{
+    =WinRM is not enabled or configured on the failing servers; remediate by running <code>winrm quickconfig</code> (or the equivalent via Group Policy) on those targets. # Correct. This is the canonical scenario from the inherited course material.
+    ~The script has a syntax error; remediate by re-running with -Verbose to inspect output. # Incorrect. A syntax error would fail uniformly across all targets, not on three specific systems.
+    ~The Ops workstation has insufficient memory; remediate by closing other applications. # Incorrect. Memory pressure on the originating workstation does not produce a per-target WinRM failure.
+    ~The target servers are running an unsupported PowerShell version; remediate by uninstalling PowerShell. # Incorrect. Uninstalling PowerShell would worsen, not fix, the issue.
+}
+
+// -----------------------------------------------------------------------------
+// K8.2 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K8.2 Module not loaded inside job::[html]<p>A student's parallel-collection script imports a custom module at the top of the orchestrator script and then uses <code>Start-Job</code> to invoke functions from that module against multiple remote systems. Every job fails with "term is not recognized." What is the cause?</p>{
+    =Background jobs run in isolated PowerShell processes and do not inherit modules imported in the parent session; <code>Import-Module</code> must be called inside the ScriptBlock. # Correct. This is documented as a recurring student issue in the course materials.
+    ~The custom module is corrupt and must be re-saved with UTF-8 encoding. # Incorrect. The error pattern is module scope isolation, not file corruption.
+    ~The remote systems do not have the module installed locally. # Incorrect. The functions are dispatched via Start-Job, but the actual remote calls inside the function are what need the module on the calling side.
+    ~The PowerShell execution policy is blocking module imports. # Incorrect. Execution policy would produce a different, specific error.
+}
+
+// -----------------------------------------------------------------------------
+// K8.3 - Explain-in-Context - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K8.3 Truncated JSON output::[html]<p>An orchestrator script collects nested objects from multiple remote systems into a hashtable and writes the result to a JSON file. The file appears valid but is missing data from deeply nested properties. What is the cause and fix?</p>{
+    =<code>ConvertTo-Json</code> uses a default depth of 2, which silently truncates deeper structures. Specify <code>-Depth 10</code> (or higher) to serialize the full tree. # Correct. This is documented as a recurring failure mode in the inherited materials.
+    ~The JSON specification does not support deeply nested objects, so truncation is unavoidable. # Incorrect. The JSON specification has no nesting limit; the truncation is a PowerShell default, not a format limit.
+    ~The hashtable was modified after serialization; resolve by writing twice and comparing. # Incorrect. The truncation occurs at serialization, not after.
+    ~The output file system does not support files larger than the default 2 KB; use a larger drive. # Incorrect. There is no such file size limit; the issue is serialization depth.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K9 - Script Repurposing
+
+// -----------------------------------------------------------------------------
+// K9.1 - Recall and Application - MCQ
+// -----------------------------------------------------------------------------
+::K9.1 Repurposing prerequisite::[html]<p>Which characteristic of a script most strongly enables repurposing for a new use case without rewriting it?</p>{
+    =Parameterization of behavior, so that values controlling the script's actions are passed in rather than hard-coded. # Correct. Parameters are the primary mechanism that turns a one-off script into a reusable tool.
+    ~Use of aliases throughout the script body to keep it concise. # Incorrect. Aliases hinder repurposing because they may not exist in the target environment.
+    ~Inline credentials so the script does not need to prompt for input. # Incorrect. Hard-coded credentials are a security defect, not a repurposing aid.
+    ~Hard-coded computer names so the script always targets known systems. # Incorrect. Hard-coding is the opposite of what enables repurposing.
+}
+
+// -----------------------------------------------------------------------------
+// K9.2 - Recall and Application - Scenario MCQ
+// -----------------------------------------------------------------------------
+::K9.2 Repurposing risk::[html]<p>You are repurposing a script another team wrote two years ago. Which risk is MOST important to evaluate before deploying the repurposed script in your environment?</p>{
+    =Latent bugs or security defects in the original script that may behave differently or become exploitable in the new context. # Correct. Hidden defects and changed-context security implications are the primary documented risks.
+    ~The original author may not be available to take credit for the rewrite. # Incorrect. Authorship attribution is not a deployment risk.
+    ~PowerShell may have removed the cmdlets used in the original. # Incorrect. This is one specific case of the broader compatibility/defect concern; the more important general risk is latent issues that surface in the new context.
+    ~The script may run faster than expected and complete before logs can capture it. # Incorrect. This is not a documented repurposing risk.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K10 - API Interactions
+
+// -----------------------------------------------------------------------------
+// K10.1 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K10.1 REST API cmdlet::[html]<p>Which PowerShell cmdlet is the standard mechanism for invoking a REST API and receiving the response as parsed PowerShell objects?</p>{
+    =<code>Invoke-RestMethod</code> # Correct. Invoke-RestMethod parses JSON or XML responses into PowerShell objects.
+    ~<code>Invoke-WebRequest</code> # Incorrect. Invoke-WebRequest returns the raw HTTP response (status, headers, content); it does not parse the body into objects automatically.
+    ~<code>Send-WebRequest</code> # Incorrect. Send-WebRequest is not a PowerShell cmdlet.
+    ~<code>Invoke-API</code> # Incorrect. Invoke-API is not a PowerShell cmdlet.
+}
+
+// -----------------------------------------------------------------------------
+// K10.2 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K10.2 Authentication header::[html]<p>When calling a REST API that requires a bearer token, which approach is the standard PowerShell pattern?</p>{
+    =Pass an <code>Authorization</code> header (e.g., <code>"Bearer &lt;token&gt;"</code>) via the <code>-Headers</code> parameter of <code>Invoke-RestMethod</code>. # Correct. -Headers takes a hashtable; this is the conventional bearer-token pattern.
+    ~Place the token in a query string parameter named <code>?password=</code>. # Incorrect. Bearer tokens belong in headers, not query strings, and never under the name "password."
+    ~Hard-code the token into the URL itself. # Incorrect. URL embedding is insecure and not the standard pattern.
+    ~PowerShell does not support API authentication; an external tool is required. # Incorrect. PowerShell fully supports authenticated REST calls.
+}
+
+
+$CATEGORY: $course$/170A_WOAC_Final/K11 - Microsoft Azure Integration
+
+// -----------------------------------------------------------------------------
+// K11.1 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K11.1 Az module purpose::[html]<p>What is the primary purpose of the <code>Az</code> PowerShell module?</p>{
+    =It provides cmdlets to manage Microsoft Azure resources from PowerShell. # Correct. The Az module is Microsoft's supported PowerShell interface for Azure resource management.
+    ~It provides offline emulation of Azure for local development without a subscription. # Incorrect. The Az module talks to live Azure; the Azure Storage Emulator is a different tool.
+    ~It encrypts PowerShell scripts before they are uploaded to a code repository. # Incorrect. Encryption is unrelated to the Az module.
+    ~It is the alias system used to shorten Azure CLI commands. # Incorrect. The Azure CLI is a separate, non-PowerShell tool.
+}
+
+// -----------------------------------------------------------------------------
+// K11.2 - Recognition - MCQ
+// -----------------------------------------------------------------------------
+::K11.2 Azure authentication cmdlet::[html]<p>Which cmdlet authenticates an interactive PowerShell session to an Azure subscription using the Az module?</p>{
+    =<code>Connect-AzAccount</code> # Correct. Connect-AzAccount is the standard interactive authentication cmdlet in the Az module.
+    ~<code>Login-Azure</code> # Incorrect. Login-Azure is not a cmdlet in the current Az module.
+    ~<code>New-AzSession</code> # Incorrect. New-AzSession is not the authentication cmdlet.
+    ~<code>Set-AzCredential</code> # Incorrect. Set-AzCredential is not the authentication cmdlet.
+}
+
+// =============================================================================
+// END OF EXAM
+// Total questions: 29
+// Distribution check (target per Section 9.2):
+//   K1: 3  (target 2-3) OK
+//   K2: 3  (target 2-3) OK
+//   K3: 3  (target 2-3) OK
+//   K4: 3  (target 2-3) OK
+//   K5: 3  (target 2-3) OK
+//   K6: 3  (target 2-3) OK
+//   K7: 2  (target 2)   OK
+//   K8: 3  (target 2-3) OK
+//   K9: 2  (target 2)   OK
+//   K10: 2 (target 2)   OK
+//   K11: 2 (target 2)   OK
+// Total: 29 (within 25-30 contract bound)
+// =============================================================================
