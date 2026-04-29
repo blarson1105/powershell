@@ -103,7 +103,7 @@ $CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_1
 // -----------------------------------------------------------------------------
 // Q8 - Source: 1.7 Returning Structured Output with PSCustomObject (capstone wrapper)
 // -----------------------------------------------------------------------------
-::Ch1.Q8 Counting wrapped data::[html]<p>A function returns the capstone wrapper shape: <code>[pscustomobject]@{ ComputerName=...; Function=...; Status='Success'; Data=$ProcessArray; Error=$null }</code>, where <code>$ProcessArray</code> contains 500 process objects. You assign the function's output to <code>$Result</code>. What does <code>$Result.Count</code> return?</p>{
+::Ch1.Q8 Counting wrapped data::[html]<p>A function returns the capstone wrapper shape: <code>[pscustomobject]@\{ ComputerName=...; Function=...; Status='Success'; Data=$ProcessArray; Error=$null \}</code>, where <code>$ProcessArray</code> contains 500 process objects. You assign the function's output to <code>$Result</code>. What does <code>$Result.Count</code> return?</p>{
     =1, because <code>$Result</code> is a single wrapper object regardless of how much data is held in <code>$Result.Data</code>. # Correct. The chapter calls out this exact trap; the wrapper is scalar, and counting the actual data requires $Result.Data.Count.
     ~500, matching the number of process objects held in the wrapper's Data property. # Incorrect. PowerShell does not count nested array contents through the parent object.
     ~$null, because <code>.Count</code> is not a property exposed on a PSCustomObject. # Incorrect. .Count works on PSCustomObject and returns 1 for a single instance.
