@@ -1,0 +1,217 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting
+// Chapter 3 End-of-Chapter Quiz: Remoting and Operational Context
+// =============================================================================
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting course
+//   book on the CVTE LMS (Moodle Book ID 584), Chapter 3 sections 3.1-3.7
+// Format: Moodle GIFT
+// Total questions: 12
+// Type: Formative - multiple attempts allowed per WRE-SCOPE-001
+//
+// Final exam alignment: Chapter 3 is the source of more CTSSB knowledge items
+// than any other chapter (K2, K3, K4, K6, K7, K8, K10, K11). Direct topic
+// overlap with the final exam is unavoidable. Each quiz question that overlaps
+// is reworded with a different scenario or angle so memorized exam answers do
+// not transfer mechanically.
+//
+//   Quiz Q1  (the four checks - missing parameter scenario)
+//     <-> Final exam K2.2 (the four checks - what to check first)
+//
+//   Quiz Q2  (PSSession purpose - efficiency rationale)
+//     <-> No direct final exam overlap; Chapter 3.2 specific.
+//
+//   Quiz Q3  (using: scope modifier - what fails without it)
+//     <-> No direct final exam overlap; Chapter 3.2 specific.
+//
+//   Quiz Q4  (double-hop manifestation in a job context)
+//     <-> Final exam K3.1 (double-hop in a UNC scenario)
+//
+//   Quiz Q5  (CredSSP vs RBKCD selection criterion)
+//     <-> Final exam K3.2 (production-grade option)
+//
+//   Quiz Q6  (Access denied - three possible causes)
+//     <-> Final exam K8.1 (credential format trap specifically)
+//
+//   Quiz Q7  (ConstrainedLanguage error message recognition)
+//     <-> Final exam K4.3 (diagnosing the error message)
+//
+//   Quiz Q8  (which language mode disables the engine)
+//     <-> Final exam K4.1 (ConstrainedLanguage characterization)
+//
+//   Quiz Q9  (Script Block Logging defensive role)
+//     <-> Final exam K6.2 (Event ID 4104 identification)
+//
+//   Quiz Q10 (T1027 vs T1059.001 distinction)
+//     <-> Final exam K6.3 (T1059.001 as the umbrella technique)
+//
+//   Quiz Q11 (when DSC is the right answer)
+//     <-> Final exam K7.2 (DSC scope guidance)
+//
+//   Quiz Q12 (what changes between cloud providers)
+//     <-> Final exam K11.2 (auth differs, pattern stays the same)
+//
+// All questions follow the contract single-correct rule (Section 11.1.b).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_3
+
+
+// -----------------------------------------------------------------------------
+// Q1 - Source: 3.1 Debugging Mindset (the four checks)
+// (Final exam K2.2 angle: applies the four checks to a specific failure type
+// rather than asking student to enumerate them)
+// -----------------------------------------------------------------------------
+::Ch3.Q1 Four checks applied to a remote failure::[html]<p>A teammate runs a script that worked yesterday but is returning empty results today against the same target. They have not changed the script. According to the four-check debugging habit from Section 3.1, which check is most likely to surface the cause first?</p>{
+    =Execution context. Whether the user, elevation, or PowerShell edition has changed since yesterday. # Correct. The chapter explicitly identifies execution context as the most informative check for "works locally / fails remotely" or "worked yesterday / fails today" scenarios.
+    ~Parameter values. The teammate may be passing a different value than they think. # Incorrect. Parameter values matter, but the scenario specifies the script and inputs are unchanged.
+    ~Object types. The cmdlet may be returning a different type than expected. # Incorrect. Object types rarely change between days for an unchanged script; context is the more likely differentiator.
+    ~Exact error message. Reading the literal text of the error rather than interpreting it. # Incorrect. Error messages are valuable, but the scenario describes empty results, not a clear error to read.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q2 - Source: 3.2 WinRM and Remoting Basics (PSSession vs ad-hoc)
+// -----------------------------------------------------------------------------
+::Ch3.Q2 PSSession over ad-hoc Invoke-Command::[html]<p>According to the chapter, when does using a persistent <code>PSSession</code> become more appropriate than repeated ad-hoc <code>Invoke-Command -ComputerName</code> calls?</p>{
+    =When you need to run multiple operations against the same target, since a persistent session reuses one authentication and connection setup instead of paying that cost for every call. # Correct. The chapter explicitly identifies efficiency for multi-operation workflows as the reason to choose New-PSSession over repeated ad-hoc calls.
+    ~When the target is on a different domain than the originating system. # Incorrect. Cross-domain remoting depends on trust configuration, not session persistence.
+    ~When the script needs to write output to a file on the remote system. # Incorrect. Output destination is independent of session persistence; either pattern can write to remote files.
+    ~When the operator wants to bypass execution policy on the target. # Incorrect. Execution policy is unaffected by whether a session is persistent or ad-hoc.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q3 - Source: 3.2 WinRM and Remoting Basics ($using: scope modifier)
+// -----------------------------------------------------------------------------
+::Ch3.Q3 Variable not found in remote scope::[html]<p>A script defines <code>$ServiceName = 'Spooler'</code> on Ops, then calls <code>Invoke-Command -ComputerName 'System-1' -ScriptBlock { Get-Service -Name $ServiceName }</code>. The remote call returns nothing useful. According to the chapter, what is the cause and the fix?</p>{
+    =The remote session does not see local variables automatically. Use <code>$using:ServiceName</code> inside the script block to copy the local value into the remote scope. # Correct. The chapter is explicit on this and uses this exact scenario as the example.
+    ~The remote session has its own copy of <code>$ServiceName</code> set to a different value. Override it by setting the variable at the top of the script block. # Incorrect. The remote session does not have a competing variable; it has none. The fix is to send the local value across, not to override.
+    ~The script block needs a <code>param()</code> declaration. Add <code>param($ServiceName)</code> and pass <code>-ArgumentList $ServiceName</code> to fix it. # Incorrect. ArgumentList with param is the alternate fix, but the chapter's primary mechanism for "the value already exists locally and the remote command only needs to read it" is $using:.
+    ~PowerShell remoting requires a string literal for the service name. Replace the variable with the literal value 'Spooler'. # Incorrect. Hard-coding eliminates the function's reusability; the chapter's solution is $using:.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q4 - Source: 3.3 Authentication, Delegation, and the Double-Hop Problem
+// (Final exam K3.1 angle: same problem class, different scenario shape)
+// -----------------------------------------------------------------------------
+::Ch3.Q4 Double-hop in a job context::[html]<p>Your script runs cleanly when invoked interactively from Ops. When you place the same logic inside a <code>Start-Job</code> running on System-1 against a UNC share on Depot, it fails with a permission-style error. According to the chapter, what is the FIRST thing you should check before assuming a permissions problem on Depot?</p>{
+    =Whether your credentials are being delegated past System-1. The double-hop problem produces permission-style errors that are not really permission errors. # Correct. The chapter's check-your-understanding question for 3.3 covers this scenario specifically.
+    ~Whether Depot's WinRM service is running. # Incorrect. WinRM is not used to access a UNC share; the failure is in credential delegation, not WinRM availability.
+    ~Whether the user account has been locked out by failed logon attempts. # Incorrect. The chapter does not name lockout as the first check; the named cause is delegation.
+    ~Whether the script's execution policy was modified between the two attempts. # Incorrect. Execution policy does not affect credential delegation; the named cause is the double-hop pattern.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q5 - Source: 3.3 Authentication, Delegation, and the Double-Hop Problem
+// (Final exam K3.2 angle: tests the selection rationale rather than naming the option)
+// -----------------------------------------------------------------------------
+::Ch3.Q5 Choosing CredSSP vs RBKCD::[html]<p>According to the chapter, what is the primary criterion for choosing CredSSP over RBKCD as a double-hop solution?</p>{
+    =CredSSP is the simpler path for ad-hoc work and course exercises; RBKCD is the production answer because it does not expose the user's credential to the intermediate machine. # Correct. The chapter states this exact criterion: complexity vs credential exposure.
+    ~CredSSP is faster at runtime; RBKCD adds significant authentication latency to every call. # Incorrect. The chapter does not present runtime performance as the differentiator.
+    ~CredSSP requires no Active Directory configuration; RBKCD requires a full domain rebuild. # Incorrect. RBKCD is configured in AD on the target resource, not via a domain rebuild.
+    ~CredSSP works only on PowerShell 7; RBKCD works on both editions. # Incorrect. Both options work on both editions; the differentiator is credential exposure, not PowerShell version.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q6 - Source: 3.4 Common Remote Execution Issues
+// (Final exam K8.1 angle: tests the broader symptom rather than naming
+// credential format specifically)
+// -----------------------------------------------------------------------------
+::Ch3.Q6 Access denied diagnosis::[html]<p>You see "Access denied" when running a remote command. According to the chapter, which of the following is NOT one of the three things that could be true behind that error?</p>{
+    =The target's PowerShell edition is incompatible with the originating system's edition. # Correct. The chapter does not list edition mismatch as a cause of "Access denied"; the three named causes are wrong credential format, bad password, and insufficient permissions.
+    ~The credential was entered without a domain qualifier and resolved against the local account database. # Incorrect - this IS one of the three named causes (wrong credential format).
+    ~The password supplied was incorrect for the account. # Incorrect - this IS one of the three named causes (bad password).
+    ~The authenticated user has insufficient permissions on the target resource. # Incorrect - this IS one of the three named causes (insufficient permissions).
+}
+
+
+// -----------------------------------------------------------------------------
+// Q7 - Source: 3.5 Language Modes
+// (Final exam K4.3 angle: tests the operator response to the same error,
+// not just identification of the cause)
+// -----------------------------------------------------------------------------
+::Ch3.Q7 Responding to a ConstrainedLanguage error::[html]<p>You ran a script on a hardened customer host and received the error "Cannot invoke method. Method invocation is supported only on core types in this language mode." According to the chapter, what is the correct operational response?</p>{
+    =Recognize that the host is enforcing ConstrainedLanguage. The script logic is fine; host policy is restricting it. Either rewrite the script to avoid the blocked .NET calls or coordinate with the host owner. # Correct. The chapter's callout names this exactly: "The script logic is fine. The host is restricting it."
+    ~Rewrite the .NET method calls as REST API calls, since REST APIs bypass language mode restrictions. # Incorrect. REST API calls themselves use cmdlets that may also be restricted; the chapter does not present this as a workaround.
+    ~Run the script with <code>-ExecutionPolicy Bypass</code> to override the language mode for that session. # Incorrect. Execution policy and language mode are different controls; -ExecutionPolicy Bypass does not change language mode.
+    ~Wrap the .NET calls in a try/catch block so the script continues despite the failures. # Incorrect. Suppressing the error does not make the calls succeed; the calls produce no useful result.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q8 - Source: 3.5 Language Modes
+// (Final exam K4.1 angle: tests a different language mode than the exam)
+// -----------------------------------------------------------------------------
+::Ch3.Q8 NoLanguage characterization::[html]<p>According to the chapter, which PowerShell language mode is described as having "the PowerShell engine effectively disabled," with only specific cmdlets able to execute?</p>{
+    =NoLanguage # Correct. The chapter's table describes NoLanguage in exactly those terms.
+    ~ConstrainedLanguage # Incorrect. ConstrainedLanguage allows most cmdlets to work but blocks .NET method calls and type acceleration.
+    ~RestrictedLanguage # Incorrect. RestrictedLanguage limits to a small set of cmdlets used by some constrained UI environments; the engine is not disabled.
+    ~FullLanguage # Incorrect. FullLanguage is the default with all features available.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q9 - Source: 3.6 PowerShell Abuse and Defensive Context
+// (Final exam K6.2 angle: tests the operator-side implication of 4104,
+// not just the Event ID number)
+// -----------------------------------------------------------------------------
+::Ch3.Q9 Script Block Logging operator implication::[html]<p>According to the chapter, what is the practical implication for an operator of writing scripts on a host where Script Block Logging (Event ID 4104) is enabled?</p>{
+    =The actual code PowerShell executed is captured in the log, including any code that was originally encoded or built dynamically. Obfuscation does not hide a script from the log; it only delays the visibility. # Correct. The chapter explicitly states this: 4104 captures post-deobfuscation code.
+    ~Scripts run measurably slower because the engine pauses on every script block to write to the event log. # Incorrect. The chapter does not present 4104 as a performance concern.
+    ~Only scripts launched from PowerShell 7 are logged; PowerShell 5.1 scripts bypass 4104 entirely. # Incorrect. Both editions log to 4104 when configured.
+    ~Scripts that use encoded commands are automatically blocked from running on the host. # Incorrect. 4104 logs but does not block; blocking is a separate control.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q10 - Source: 3.6 PowerShell Abuse and Defensive Context
+// (Final exam K6.3 angle: tests the distinction between T1059.001 and T1027,
+// not just the umbrella identification)
+// -----------------------------------------------------------------------------
+::Ch3.Q10 Distinguishing two MITRE techniques::[html]<p>According to the chapter, which MITRE ATT&CK technique specifically covers the use of encoded commands and string obfuscation to evade detection?</p>{
+    =T1027 - Obfuscated Files or Information # Correct. The chapter explicitly maps encoded commands and string obfuscation to T1027, distinct from the broader T1059.001 PowerShell umbrella.
+    ~T1059.001 - Command and Scripting Interpreter: PowerShell # Incorrect. T1059.001 is the umbrella for any adversary use of PowerShell, broader than the obfuscation specifically.
+    ~T1078 - Valid Accounts # Incorrect. T1078 covers credential abuse generally; the chapter does not map it to PowerShell obfuscation.
+    ~T1003 - OS Credential Dumping # Incorrect. T1003 covers credential dumping; it is unrelated to script obfuscation.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q11 - Source: 3.7 DSC, APIs, and Platform Integration
+// (Final exam K7.2 angle: tests the operational scenario, not the
+// scope-guidance phrasing)
+// -----------------------------------------------------------------------------
+::Ch3.Q11 When DSC is the right answer::[html]<p>According to the chapter, which scenario is the kind of work where DSC is genuinely the right answer rather than overkill?</p>{
+    =Maintaining IIS, a web application, and three Windows Services in a known consistent state across 200 web servers, with automatic re-convergence if any of them drift. # Correct. The chapter describes DSC as most useful for fleet-wide configuration management of many systems kept in a known state.
+    ~Running a one-time inventory query against four lab targets to capture currently-running processes. # Incorrect. The chapter explicitly states DSC is overkill for one-off scripts targeting a handful of systems.
+    ~Copying a single file to a single remote system and verifying the copy succeeded. # Incorrect. This is the kind of imperative remoting work the capstone uses; DSC would be overkill.
+    ~Running an ad-hoc Get-Service query across five servers during an incident response. # Incorrect. Ad-hoc query work fits imperative remoting, not DSC.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q12 - Source: 3.7 DSC, APIs, and Platform Integration
+// (Final exam K11.2 angle: same content question, different framing)
+// -----------------------------------------------------------------------------
+::Ch3.Q12 What transfers between cloud providers::[html]<p>You learned to query Azure resources using the <code>Az.*</code> modules. A teammate is starting work in AWS using <code>AWS.Tools.*</code>. According to the chapter, what part of your Azure scripting experience transfers directly, and what part does not?</p>{
+    =The overall pattern transfers - set up authentication, call the endpoint, work with the returned objects - but the specific authentication mechanics differ between providers. # Correct. The chapter states this exactly: "the mechanics differ; the pattern is the same."
+    ~Authentication transfers directly because all major clouds use the same OAuth flow; only the cmdlet names differ. # Incorrect. The chapter explicitly identifies authentication as the variable part.
+    ~Nothing transfers; AWS PowerShell modules are designed differently and require relearning the entire pattern. # Incorrect. The chapter explicitly says the patterns transfer.
+    ~Cmdlet names transfer because PowerShell enforces the verb-noun convention across all cloud providers; only the underlying API URLs differ. # Incorrect. Cmdlet names are provider-specific (e.g., Connect-AzAccount vs Set-AWSCredential), not standardized.
+}
+
+
+// =============================================================================
+// END OF QUIZ
+// Total questions: 12
+//
+// Concept-level overlap with the final exam is unavoidable in this chapter
+// because Chapter 3 sources eight of the eleven CTSSB knowledge items. Every
+// quiz question that overlaps with a final exam question uses a different
+// scenario, framing, or angle so that the underlying concept must be applied
+// rather than memorized.
+// =============================================================================

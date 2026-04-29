@@ -1,0 +1,139 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting
+// Chapter 1 End-of-Chapter Quiz: Foundations Review
+// =============================================================================
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting course
+//   book on the CVTE LMS (Moodle Book ID 584), Chapter 1 sections 1.1-1.8
+// Format: Moodle GIFT
+// Total questions: 9
+// Type: Formative - multiple attempts allowed per WRE-SCOPE-001
+//
+// Final exam alignment: Chapter 1 establishes prerequisite knowledge for K1
+// (.NET / objects) and K2 (debugging). Where this quiz tests the same concept
+// as the final exam, the question is reworded and uses a different scenario.
+//
+// Specifically: final exam K2.1 tests why try/catch silently fails without
+// -ErrorAction Stop. This quiz's Q9 tests the same concept from the inverse
+// angle: what -ErrorAction Stop changes about cmdlet error behavior.
+//
+// All questions follow the contract single-correct rule (Section 11.1.b).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_1
+
+
+// -----------------------------------------------------------------------------
+// Q1 - Source: 1.1 Objects, Output, and the Pipeline
+// -----------------------------------------------------------------------------
+::Ch1.Q1 Get-Member purpose::[html]<p>You run <code>Get-Service | Select-Object -First 1</code> and see one row of service information. You then pipe the same command to <code>Get-Member</code>. What does the second command tell you that the first does not?</p>{
+    =The .NET type of the object and the full list of properties and methods it exposes, including those not shown in the default display. # Correct. The default display is a formatted view; Get-Member reveals what the object actually is.
+    ~A list of every service running on the local machine, sorted by status. # Incorrect. Get-Member does not return service data; it returns metadata about the object type.
+    ~The PowerShell version and edition the command was executed under. # Incorrect. That information comes from $PSVersionTable, not Get-Member.
+    ~The execution time of the command in milliseconds. # Incorrect. Execution time comes from Measure-Command, not Get-Member.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q2 - Source: 1.2 Help, Discovery, and Get-Member
+// -----------------------------------------------------------------------------
+::Ch1.Q2 Discovering an unknown cmdlet::[html]<p>You need to retrieve scheduled tasks on a remote system but cannot remember the exact cmdlet name. According to the chapter, which Get-Command parameter is the fastest way to find it?</p>{
+    =<code>-Noun</code>, e.g., <code>Get-Command -Noun ScheduledTask</code>. # Correct. PowerShell's verb-noun naming convention makes -Noun the most direct discovery parameter when you know the topic but not the cmdlet.
+    ~<code>-Verb</code>, e.g., <code>Get-Command -Verb Retrieve</code>. # Incorrect. Retrieve is not a standard PowerShell verb; the verb you want is Get, which is too broad to narrow the result set.
+    ~<code>-Module</code>, used with a wildcard module name. # Incorrect. -Module narrows by module, but you would need to know which module already; it is not the discovery-by-topic parameter.
+    ~<code>-CommandType</code>, e.g., <code>Get-Command -CommandType Cmdlet</code>. # Incorrect. -CommandType filters by command type (cmdlet, function, alias) but does not filter by topic.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q3 - Source: 1.3 Variables, Strings, Arrays, Hashtables, Types, and Casting
+// -----------------------------------------------------------------------------
+::Ch1.Q3 Type coercion in comparison::[html]<p>You run the comparison <code>'5985' -lt 100</code> in PowerShell and the result is unexpected. According to the chapter, what determines how PowerShell handles the type mismatch in this comparison?</p>{
+    =The left operand determines the comparison type, and PowerShell coerces the right operand to match. # Correct. The chapter explicitly states this rule and uses this exact comparison as the example.
+    ~PowerShell always converts both operands to strings before comparing. # Incorrect. The chapter explicitly contradicts this; the left operand drives the type.
+    ~PowerShell throws a type-mismatch error when comparing strings to integers. # Incorrect. PowerShell does not throw; it coerces silently, which is why the result can surprise you.
+    ~The right operand is treated as authoritative and the left is converted to match it. # Incorrect. The rule is the opposite: left operand wins.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q4 - Source: 1.4 CIM Classes, Instances, and Property Retrieval
+// -----------------------------------------------------------------------------
+::Ch1.Q4 Get-CimInstance vs Get-WmiObject::[html]<p>According to the chapter, why should new scripts use <code>Get-CimInstance</code> rather than <code>Get-WmiObject</code>?</p>{
+    =Get-WmiObject is not present in PowerShell 7, while Get-CimInstance works on both Windows PowerShell 5.1 and PowerShell 7 and uses a more efficient remote protocol. # Correct. The chapter calls this out explicitly in the CIM vs WMI callout.
+    ~Get-WmiObject only works on the local machine and cannot query remote systems. # Incorrect. Get-WmiObject does support -ComputerName; the issue is cross-edition availability.
+    ~Get-WmiObject returns plain text while Get-CimInstance returns objects. # Incorrect. Both return objects; the difference is the protocol and edition support.
+    ~Get-WmiObject requires elevated permissions for every query, while Get-CimInstance does not. # Incorrect. Both require permissions appropriate to the class being queried; this is not the chapter's reason.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q5 - Source: 1.5 Control Flow and Looping
+// -----------------------------------------------------------------------------
+::Ch1.Q5 Choosing the right control structure::[html]<p>You need to run a health check against four targets and build a table of results, with one row per target. According to the chapter, which control structure should you reach for?</p>{
+    =A <code>foreach</code> statement that emits a <code>[pscustomobject]</code> per target, with the loop output captured into a variable. # Correct. The chapter presents this as the canonical "do the same thing to every item, build a table" pattern.
+    ~<code>Where-Object</code>, because it produces one row of output per item in the collection. # Incorrect. Where-Object filters; it does not generate per-item output unless the items already exist.
+    ~<code>ForEach-Object</code> in a one-liner without capturing output. # Incorrect. The chapter explicitly distinguishes the foreach statement (preferred in scripts) from ForEach-Object (preferred for one-liners). Building a table belongs in a script.
+    ~A <code>while</code> loop with a manual counter that increments through the target array. # Incorrect. PowerShell's foreach handles iteration without manual counter management; while is for indeterminate-length conditions.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q6 - Source: 1.6 Functions, Parameters, and Execution Context
+// -----------------------------------------------------------------------------
+::Ch1.Q6 Mandatory plus default::[html]<p>A teammate writes a function with a parameter declared as both <code>[Parameter(Mandatory)]</code> and given a default value. What happens when the function is called without supplying that parameter?</p>{
+    =PowerShell prompts the caller interactively for the value, ignoring the default. The Mandatory attribute takes precedence. # Correct. The chapter's check-your-understanding question covers this; Mandatory makes the default unreachable.
+    ~The default value is used and no prompt appears, because the default satisfies the parameter requirement. # Incorrect. Mandatory means the caller must supply the value; defaults do not satisfy that requirement.
+    ~PowerShell throws a parser error because Mandatory and a default are mutually exclusive. # Incorrect. PowerShell allows the combination syntactically; the runtime behavior is to ignore the default.
+    ~The function fails immediately with a "missing required parameter" error and does not prompt. # Incorrect. PowerShell's default behavior for Mandatory is to prompt, not to fail without prompting.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q7 - Source: 1.7 Returning Structured Output with PSCustomObject
+// -----------------------------------------------------------------------------
+::Ch1.Q7 Return shape consistency::[html]<p>A function returns a <code>[pscustomobject]</code> with five properties on the success path, but on the failure path it returns a <code>[pscustomobject]</code> with only two properties (<code>ComputerName</code> and <code>Error</code>). What problem does this cause when an orchestrator collects results from many hosts?</p>{
+    =The downstream <code>Format-Table</code>, <code>Where-Object</code>, and <code>Export-Csv</code> operations cannot rely on a uniform shape, so column alignment and property-based filters break or behave inconsistently. # Correct. The chapter specifically warns that consistent shape across success and failure paths is what makes downstream code reliable.
+    ~The orchestrator throws a runtime error because PowerShell does not allow mixed object shapes in a single collection. # Incorrect. PowerShell allows mixed shapes; the problem is downstream reliability, not a runtime error.
+    ~The success rows are silently discarded and only failure rows survive in the result set. # Incorrect. PowerShell does not discard rows based on shape mismatch.
+    ~The first row's shape is enforced on all subsequent rows, causing later rows to lose properties. # Incorrect. PowerShell does not enforce row schemas this way.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q8 - Source: 1.7 Returning Structured Output with PSCustomObject (capstone wrapper)
+// -----------------------------------------------------------------------------
+::Ch1.Q8 Counting wrapped data::[html]<p>A function returns the capstone wrapper shape: <code>[pscustomobject]@{ ComputerName=...; Function=...; Status='Success'; Data=$ProcessArray; Error=$null }</code>, where <code>$ProcessArray</code> contains 500 process objects. You assign the function's output to <code>$Result</code>. What does <code>$Result.Count</code> return?</p>{
+    =1, because <code>$Result</code> is a single wrapper object regardless of how much data is held in <code>$Result.Data</code>. # Correct. The chapter calls out this exact trap; the wrapper is scalar, and counting the actual data requires $Result.Data.Count.
+    ~500, matching the number of process objects held in the wrapper's Data property. # Incorrect. PowerShell does not count nested array contents through the parent object.
+    ~$null, because <code>.Count</code> is not a property exposed on a PSCustomObject. # Incorrect. .Count works on PSCustomObject and returns 1 for a single instance.
+    ~501, counting the wrapper itself plus the 500 nested process objects. # Incorrect. PowerShell does not aggregate counts this way.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q9 - Source: 1.8 Error Handling, Files, Paths, and Script Troubleshooting
+// (intentional concept overlap with final exam K2.1, different angle)
+// -----------------------------------------------------------------------------
+::Ch1.Q9 ErrorAction Stop behavior::[html]<p>You wrap a <code>Get-CimInstance</code> call in a <code>try/catch</code> block, but you do not include <code>-ErrorAction Stop</code>. The cmdlet encounters a problem during execution. What happens?</p>{
+    =The cmdlet writes a non-terminating error and execution continues past it; the catch block does not fire because PowerShell does not treat non-terminating errors as terminating without explicit instruction. # Correct. The chapter is explicit on this: many cmdlets default to non-terminating, which silently bypasses try/catch.
+    ~The catch block fires automatically because all cmdlet errors flow into try/catch by default. # Incorrect. Only terminating errors trigger catch; cmdlet errors are non-terminating by default.
+    ~The script halts with an unhandled exception because the catch block has nothing to bind to. # Incorrect. The script does not halt; it continues past the non-terminating error.
+    ~The cmdlet retries silently three times before reporting an error to the catch block. # Incorrect. PowerShell does not retry cmdlet calls automatically.
+}
+
+
+// =============================================================================
+// END OF QUIZ
+// Total questions: 9
+//
+// Final exam topic alignment (questions assess the same underlying concepts,
+// asked from a different angle):
+//   Ch1.Q9 (Error handling without -ErrorAction Stop)
+//     <-> Final exam K2.1 (Why catch never fires without -ErrorAction Stop)
+//
+// All other Chapter 1 quiz questions test prerequisite material that the final
+// exam assumes is already in place (objects/Get-Member, help/discovery, type
+// coercion, CIM, control flow, function parameters, structured output,
+// wrapper-counting trap).
+// =============================================================================

@@ -1,0 +1,152 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting
+// Chapter 2 End-of-Chapter Quiz: .NET for PowerShell Practitioners
+// =============================================================================
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting course
+//   book on the CVTE LMS (Moodle Book ID 584), Chapter 2 sections 2.1-2.6
+// Format: Moodle GIFT
+// Total questions: 9
+// Type: Formative - multiple attempts allowed per WRE-SCOPE-001
+//
+// Final exam alignment: Chapter 2 is the source of CTSSB K1 (.NET usage within
+// PowerShell). The final exam has three K1 questions. This quiz tests the same
+// underlying concepts using different scenarios:
+//
+//   Final exam K1.1 (type discovery via $Date.GetType().FullName)
+//     <-> Quiz Q1 (type discovery via Get-Process | Get-Member)
+//
+//   Final exam K1.2 (identifying static vs instance from a list)
+//     <-> Quiz Q4 (why static needs no object - inverse angle)
+//
+//   Final exam K1.3 (path combining with [System.IO.Path]::Combine)
+//     <-> Quiz Q5 (selecting the right .NET type for a different task)
+//
+// All questions follow the contract single-correct rule (Section 11.1.b).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_2
+
+
+// -----------------------------------------------------------------------------
+// Q1 - Source: 2.2 Properties, Methods, and Type Names
+// (Final exam K1.1 angle: tests type-name discovery via different mechanism)
+// -----------------------------------------------------------------------------
+::Ch2.Q1 Filtering Get-Member output::[html]<p>You have a process object stored in <code>$Proc</code> and want to see only the ACTIONS the object can perform, not the data fields it carries. Which command is most efficient?</p>{
+    =<code>$Proc | Get-Member -MemberType Method</code> # Correct. -MemberType Method filters to actionable members only, exactly the question being asked. The chapter calls this out as the fastest way to cut through Get-Member noise.
+    ~<code>$Proc | Get-Member -MemberType Property</code> # Incorrect. Properties carry data; methods perform actions.
+    ~<code>$Proc.GetType().FullName</code> # Incorrect. This returns the .NET type name (e.g., System.Diagnostics.Process), not the list of methods.
+    ~<code>$Proc | Format-List -Property *</code> # Incorrect. Format-List shows current property values, not the list of methods the object exposes.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q2 - Source: 2.2 Properties, Methods, and Type Names
+// -----------------------------------------------------------------------------
+::Ch2.Q2 Method without parentheses::[html]<p>A teammate writes <code>$Date.AddDays</code> in a script (no parentheses) and reports that the line "doesn't crash but doesn't do anything useful." According to the chapter, what is PowerShell actually returning?</p>{
+    =An object describing the method's signature, because PowerShell treats the bare member name as a method-info reference rather than a method call. # Correct. The chapter explicitly warns about this: omitting parentheses returns method metadata instead of invoking the method.
+    ~The current value of $Date plus one day, because PowerShell auto-invokes single-word method names with no required arguments. # Incorrect. PowerShell does not auto-invoke methods; parentheses are required.
+    ~A null value, because the method failed silently and produced no output. # Incorrect. The expression returns a real value - just not the one the teammate wanted.
+    ~A runtime error, because <code>AddDays</code> requires at least one argument. # Incorrect. PowerShell does not evaluate argument requirements until the method is actually called.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q3 - Source: 2.3 Static vs Instance Members
+// -----------------------------------------------------------------------------
+::Ch2.Q3 Recognizing static syntax in a script::[html]<p>You are reading an unfamiliar PowerShell script and see the line <code>[System.Net.Dns]::GetHostName()</code>. What does the syntax tell you about how this call works?</p>{
+    =The double-colon operator indicates a static member call on the <code>System.Net.Dns</code> type. No object instance is required; PowerShell evaluates the call against the type itself. # Correct. The chapter explicitly identifies the :: operator as the marker for a static call belonging to the type, not an instance.
+    ~The double-colon indicates that <code>GetHostName</code> is being invoked on a remote machine via PowerShell remoting. # Incorrect. The :: operator is unrelated to remoting; it is the static member operator.
+    ~The brackets around <code>System.Net.Dns</code> mean PowerShell will skip type checking, allowing any string to be passed as the type name. # Incorrect. Brackets indicate type literals, not type-checking suppression.
+    ~The syntax requires <code>System.Net.Dns</code> to be assigned to a variable first; otherwise PowerShell will throw a type-not-found error. # Incorrect. The whole point of static calls is that no instance is needed; assignment is irrelevant.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q4 - Source: 2.3 Static vs Instance Members
+// (Final exam K1.2 angle: tests the underlying reason static calls work
+// without setup, rather than asking student to identify the syntax)
+// -----------------------------------------------------------------------------
+::Ch2.Q4 Why static needs no instance::[html]<p>Why does <code>[datetime]::Now</code> return a value immediately, while <code>$Date.AddDays(1)</code> requires <code>$Date</code> to exist first?</p>{
+    =Static members belong to the type itself, so PowerShell can evaluate them without creating an object. Instance members operate on a specific object's state, so the object must exist before the call can be made. # Correct. The chapter's check-your-understanding question covers this exact distinction.
+    ~Static members are cached at PowerShell startup, while instance members are loaded on demand from the .NET runtime. # Incorrect. The distinction is about ownership (type vs instance), not about caching or loading.
+    ~Static members are read-only and instance members are read-write, and PowerShell does not require setup for read-only access. # Incorrect. Static and instance members can both be read-only or read-write; the distinction is unrelated to mutability.
+    ~Static members run in the parent session, while instance members run in a child runspace that requires variable initialization. # Incorrect. There is no runspace difference between static and instance member calls in this context.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q5 - Source: 2.4 Useful .NET Types in Scripts
+// (Final exam K1.3 angle: tests selection of correct .NET type for a different
+// task than path combining)
+// -----------------------------------------------------------------------------
+::Ch2.Q5 Selecting the right .NET type::[html]<p>You need to round the value <code>3.14159</code> to two decimal places inside a PowerShell script. According to the chapter's table of useful .NET types, which type provides this capability?</p>{
+    =<code>[math]</code> # Correct. The chapter's table identifies [math] as the type for rounding, max/min operations, with [math]::Round() as the example.
+    ~<code>[datetime]</code> # Incorrect. [datetime] is for timestamps and date math.
+    ~<code>[System.IO.Path]</code> # Incorrect. [System.IO.Path] is for path manipulation.
+    ~<code>[System.Net.Dns]</code> # Incorrect. [System.Net.Dns] is for DNS lookups.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q6 - Source: 2.4 Useful .NET Types in Scripts (namespace shorthand)
+// -----------------------------------------------------------------------------
+::Ch2.Q6 Namespace shorthand::[html]<p>You read a script that uses <code>[IO.Path]::Combine(...)</code> and your reference material uses <code>[System.IO.Path]::Combine(...)</code>. According to the chapter, what is the relationship between the two forms?</p>{
+    =They are equivalent. PowerShell accepts namespace shorthand for common types, so <code>[IO.Path]</code> resolves to <code>[System.IO.Path]</code>. Either form works in scripts you read or write. # Correct. The chapter calls this out explicitly in the namespace shorthand callout.
+    ~The shorthand form only works in PowerShell 7; the full namespace is required in Windows PowerShell 5.1. # Incorrect. The chapter does not place an edition restriction on shorthand; the example usage applies to both editions.
+    ~The shorthand form skips strict type checking, so it should be avoided in production scripts. # Incorrect. The chapter does not flag shorthand as risky; it explicitly says both forms are acceptable.
+    ~The shorthand form requires an explicit <code>Add-Type</code> call to load <code>System.IO.Path</code>; the full form does not. # Incorrect. [System.IO.Path] is loaded by default in both editions; no Add-Type call is needed for either form.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q7 - Source: 2.5 Assemblies and Namespaces
+// -----------------------------------------------------------------------------
+::Ch2.Q7 Add-Type wrapper::[html]<p>According to the chapter, why does the recommended pattern wrap <code>Add-Type -AssemblyName ...</code> in a try/catch block?</p>{
+    =Some assemblies are not available on every PowerShell edition or platform. The catch block lets the script know cleanly that the load failed, rather than failing with an obscure error later when a type from that assembly is referenced. # Correct. The chapter explicitly states this as the reason for the wrapper.
+    ~<code>Add-Type</code> always throws a non-terminating error on success, which try/catch is needed to suppress. # Incorrect. Add-Type does not throw on success; the wrapper is for handling load failures, not normal operation.
+    ~Without try/catch, <code>Add-Type</code> would consume excessive memory loading every assembly on the system. # Incorrect. Add-Type loads only the requested assembly; the wrapper is unrelated to memory.
+    ~The try/catch is required to bypass execution policy restrictions that block assembly loading by default. # Incorrect. Execution policy controls script execution, not assembly loading; try/catch does not bypass it.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q8 - Source: 2.6 Practical Examples (the readability test)
+// -----------------------------------------------------------------------------
+::Ch2.Q8 Choosing cmdlet over .NET::[html]<p>According to the chapter's "readability test," when should you prefer a cmdlet over an equivalent .NET method call?</p>{
+    =When the cmdlet version is faster for a teammate to recognize at a glance. The goal is clarity, not cleverness, so the cmdlet wins unless the .NET version is actually clearer (such as path combining). # Correct. The chapter states this exact principle: clarity over cleverness, with path combining named as the exception where .NET wins.
+    ~When the cmdlet runs faster than the equivalent .NET method, as measured by Measure-Command. # Incorrect. The chapter's test is about readability for a teammate, not measured runtime.
+    ~Always. .NET methods should never be used in PowerShell scripts because they break the verb-noun convention. # Incorrect. The chapter explicitly identifies cases where .NET is the right choice.
+    ~When the script will run on PowerShell 5.1 only, since .NET method calls are not supported in that edition. # Incorrect. .NET method calls work in both PowerShell 5.1 and PowerShell 7.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q9 - Source: 2.6 Practical Examples (composing static calls into pscustomobject)
+// -----------------------------------------------------------------------------
+::Ch2.Q9 Static calls inside pscustomobject::[html]<p>The chapter shows a pattern where multiple static .NET calls are composed inside a single <code>[pscustomobject]</code>. According to the chapter, why is this composition pattern important to internalize?</p>{
+    =It is structurally identical to what every capstone Get-* function does. The static calls are placeholders; the capstone substitutes a real CIM or remote query in their place, but the surrounding [pscustomobject] structure stays the same. # Correct. The chapter's capstone-connection callout makes this pedagogical point explicitly.
+    ~It is the only way to combine multiple values into a single PowerShell return value, since cmdlets cannot return more than one value at a time. # Incorrect. Cmdlets routinely return multi-property objects; the chapter is not making a uniqueness claim.
+    ~It eliminates the need for try/catch error handling, because static calls cannot throw exceptions. # Incorrect. Static calls absolutely can throw exceptions, and the capstone pattern still uses try/catch.
+    ~It enables PowerShell to compile the resulting object to a faster execution path than a regular hashtable. # Incorrect. There is no separate compilation path; the chapter's reason is pedagogical, not performance-related.
+}
+
+
+// =============================================================================
+// END OF QUIZ
+// Total questions: 9
+//
+// Final exam topic alignment (questions assess the same underlying concepts,
+// asked from a different angle):
+//   Quiz Q1 (filter Get-Member by method type)
+//     <-> Final exam K1.1 (type discovery via GetType().FullName)
+//   Quiz Q4 (why static needs no instance)
+//     <-> Final exam K1.2 (identify which line uses static)
+//   Quiz Q5 ([math] for rounding)
+//     <-> Final exam K1.3 ([System.IO.Path]::Combine for paths)
+//
+// Other quiz questions test K1 concepts the final exam does not directly hit:
+// method parentheses (Q2), recognizing :: in unfamiliar scripts (Q3),
+// namespace shorthand (Q6), Add-Type wrapper rationale (Q7), the readability
+// test (Q8), and the static-calls-in-pscustomobject composition pattern (Q9).
+// =============================================================================
