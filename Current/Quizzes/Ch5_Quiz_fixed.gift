@@ -1,0 +1,199 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting
+// Chapter 5 End-of-Chapter Quiz: Building Reusable Tools and Orchestration
+// =============================================================================
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting course
+//   book on the CVTE LMS (Moodle Book ID 584), Chapter 5 sections 5.1-5.10
+// Format: Moodle GIFT
+// Total questions: 12
+// Type: Formative - multiple attempts allowed per WRE-SCOPE-001
+//
+// Final exam alignment: Chapter 5 is the source of CTSSB K8 (remote execution
+// problems - module scope specifically) and K9 (script repurposing). It also
+// reinforces K2 (debugging discipline) and scaffolds skills S1, S2, S3.
+//
+//   Final exam K8.2 (function not recognized inside job - scope boundary)
+//     <-> Quiz Q5 (why parent module import does not satisfy the job)
+//
+//   Final exam K9.1 (adapting the pattern - what changes vs what stays fixed)
+//     <-> Quiz Q1 (what the placeholder is in the canonical skeleton)
+//     <-> Quiz Q11 (separation of orchestrator vs module responsibilities)
+//
+//   Final exam K9.2 (capstone mapping table - Get-RemoteTaskInfo to
+//                    Get-RemoteProcessInventory)
+//     <-> Quiz Q12 (different function pair, same mapping concept)
+//
+// Other final exam questions (K8.1 credential format, K8.3 path-not-found)
+// source from Section 3.4, not Chapter 5; this quiz does not duplicate them.
+//
+// All questions follow the contract single-correct rule (Section 11.1.b).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_5
+
+
+// -----------------------------------------------------------------------------
+// Q1 - Source: 5.1 Remote Query Pattern (the placeholder)
+// (Final exam K9.1 angle: tests what the wrapper IS by asking what stays
+// fixed vs varies, rather than asking student to identify a mapping)
+// -----------------------------------------------------------------------------
+::Ch5.Q1 What changes in the canonical skeleton::[html]<p>The chapter introduces a canonical Get-* function skeleton in Section 5.1 and reuses it across Sections 5.2 and 5.3. According to the chapter, what part of that skeleton is intended to change between functions, and what part is intended to stay fixed?</p>{
+    =The contents of the script block change. The parameter declaration, the try/catch wrapper, and the return-object shape (success and failure) stay fixed. # Correct. Section 5.1 states this verbatim: "the script block is a placeholder. Everything else... is fixed."
+    ~The function name and the parameter declaration change. The script block stays fixed because it is the canonical query. # Incorrect. The script block is exactly what changes; the parameters are the standard interface that stays consistent.
+    ~The return-object shape changes to match the data being returned. The script block stays fixed. # Incorrect. The chapter specifically requires the return shape to stay fixed; orchestrator code depends on it.
+    ~Everything changes between functions. The skeleton is a starting point, not a fixed structure. # Incorrect. The chapter explicitly identifies the wrapper as fixed; "learn the wrapper, then change the script block" is the lesson.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q2 - Source: 5.1 Remote Query Pattern (failure path data property)
+// -----------------------------------------------------------------------------
+::Ch5.Q2 Null Data on failure path::[html]<p>According to the chapter, why does the failure path of the canonical Get-* function set <code>Data = $null</code> rather than omitting the Data property entirely?</p>{
+    =Both success and failure objects must have the same property names so that downstream filters, sorts, and exports behave predictably. Omitting Data on failure breaks the consistent shape. # Correct. Section 5.1's check-your-understanding question asks exactly this; consistent shape is the reason.
+    ~PowerShell throws an error if a [pscustomobject] is created with fewer properties than another [pscustomobject] in the same pipeline. # Incorrect. PowerShell does not enforce shape across pipeline objects.
+    ~$null is required by the CTSSB rubric for failure paths. # Incorrect. The chapter does not cite the CTSSB; the reason is the consistent-shape principle.
+    ~Including $null is faster than omitting the property because it avoids dynamic property lookup. # Incorrect. The chapter does not cite performance as the reason; it is consistent shape.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q3 - Source: 5.4 Build Function 3: Deploy Remote Support Files
+// -----------------------------------------------------------------------------
+::Ch5.Q3 Why deploy uses finally::[html]<p>Why does <code>Deploy-RemoteSupportFiles</code> use a <code>finally</code> block to call <code>Remove-PSSession</code>, while the Get-* query functions in Sections 5.2 and 5.3 do not have a finally block at all?</p>{
+    =The deploy function opens a persistent PSSession that must be closed whether the function succeeds or fails; finally guarantees that cleanup runs in either path. The Get-* functions use ad-hoc Invoke-Command, which does not leave a session behind. # Correct. Section 5.4 establishes the persistent-session pattern and the finally cleanup; sections 5.2 and 5.3 use ad-hoc invocation, which is why no finally is needed there.
+    ~All three functions should have a finally block, but Sections 5.2 and 5.3 omit it for brevity. # Incorrect. The chapter explicitly distinguishes ad-hoc from persistent-session patterns; the omission is structural, not stylistic.
+    ~finally is required by PowerShell whenever Copy-Item is used; the deploy function uses Copy-Item and the others do not. # Incorrect. PowerShell does not require finally for Copy-Item; the reason is session cleanup.
+    ~The deploy function has a higher risk of throwing exceptions, so the chapter adds finally as a defense-in-depth measure. # Incorrect. The chapter's reason is mechanical (session cleanup), not risk-based.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q4 - Source: 5.5 Error Handling and Validation (early validation)
+// -----------------------------------------------------------------------------
+::Ch5.Q4 Validate before remote work::[html]<p>The chapter recommends checking that a required local file exists with <code>Test-Path</code> before starting any remote operation. According to the chapter, what is the practical benefit of this early validation?</p>{
+    =The function fails on Ops with a clear message before any remote work begins, which is much easier to diagnose than a failure that surfaces several steps into a remote call. # Correct. Section 5.5 explicitly states this as the benefit: "fails early on Ops, with a clear message, before any remote work begins."
+    ~Test-Path on the local file refreshes Windows file system caches, preventing race conditions on the remote target. # Incorrect. Test-Path does not refresh caches and has no relationship to remote race conditions.
+    ~PowerShell remoting requires source paths to be validated by Test-Path before they can be used in Copy-Item. # Incorrect. PowerShell does not require this validation; the chapter recommends it for diagnostic clarity, not as a requirement.
+    ~Test-Path triggers the JIT compiler to pre-compile the deploy function, eliminating cold-start latency. # Incorrect. Test-Path has no relationship to JIT compilation.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q5 - Source: 5.6 Module Assembly (module + jobs)
+// (Final exam K8.2 angle: tests the underlying mechanism rather than
+// asking student to identify the failure)
+// -----------------------------------------------------------------------------
+::Ch5.Q5 Why the module must be re-imported in the job::[html]<p>You import <code>RemoteOpsTools.psm1</code> in your console session, then start a job whose script block calls one of its functions. According to the chapter, why does the orchestrator's <code>Import-Module</code> call not satisfy the job's needs?</p>{
+    =Each job runs in its own runspace and does not inherit modules loaded in the parent session. The job script block must call Import-Module again so the function is available in the job's runspace. # Correct. Section 5.6 states this explicitly under "How this connects to jobs."
+    ~The orchestrator's import is loaded with -Scope Process, which excludes child runspaces by default. # Incorrect. PowerShell module scoping does not work this way; the issue is runspace isolation, not -Scope behavior.
+    ~Module imports time out after 30 seconds, so by the time the job runs, the parent's import has expired. # Incorrect. Module imports do not time out; the issue is runspace boundaries.
+    ~Jobs require modules to be imported with -Force, and the orchestrator's import did not use -Force. # Incorrect. -Force re-imports a module to pick up changes; it is not what enables job visibility.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q6 - Source: 5.6 Module Assembly (Export-ModuleMember purpose)
+// -----------------------------------------------------------------------------
+::Ch5.Q6 Export-ModuleMember purpose::[html]<p>According to the chapter, what does the <code>Export-ModuleMember</code> line at the bottom of a .psm1 file accomplish?</p>{
+    =It defines the public interface of the module - which functions are visible after Import-Module - and prevents helper code or experimental functions from being exposed accidentally. # Correct. Section 5.6 names this exactly: the export list defines the interface and limits what becomes available to the importing session.
+    ~It compiles the module's functions into a faster execution path that bypasses script interpretation. # Incorrect. PowerShell does not compile script modules to a separate execution path.
+    ~It registers the module with PowerShell's global module catalog so other scripts can find it by name. # Incorrect. There is no such global catalog; module discovery uses $env:PSModulePath, not Export-ModuleMember.
+    ~It exports the module's functions to a JSON manifest file that PowerShell uses for autocompletion. # Incorrect. PowerShell autocompletion does not depend on a separate JSON manifest produced by Export-ModuleMember.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q7 - Source: 5.7 Orchestrator Pattern (orchestrator vs module responsibilities)
+// -----------------------------------------------------------------------------
+::Ch5.Q7 Orchestrator length signal::[html]<p>You are reviewing a teammate's Chapter 5 work. Their orchestrator script is 80 lines long and contains three full function definitions inline. According to the chapter, what is the most appropriate fix?</p>{
+    =Move the function definitions into the .psm1 module, leaving the orchestrator to import the module and coordinate execution. The orchestrator's job is coordination, not implementation. # Correct. Section 5.7 explicitly addresses this: "Functions belong in the module. The orchestrator imports the module and calls them."
+    ~Add comments to the orchestrator explaining each function's purpose; the length is not a problem if the code is well-documented. # Incorrect. The chapter explicitly identifies excessive orchestrator length as a problem to fix structurally, not to document around.
+    ~Split the orchestrator into three separate scripts, one per function. # Incorrect. The chapter does not recommend splitting orchestrators by function; the standard division is module + orchestrator.
+    ~Convert the orchestrator into a module so the functions can be exported alongside the orchestration logic. # Incorrect. The chapter explicitly distinguishes module (functions) from orchestrator (coordination); merging them is the opposite of the recommended pattern.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q8 - Source: 5.8 Parallel Execution from Ops (counting wrapper data)
+// -----------------------------------------------------------------------------
+::Ch5.Q8 Counting items in wrapper Data::[html]<p>A function returns a wrapper object: <code>[pscustomobject]@\{ Status='Success'; Data=$ProcessArray; Error=$null \}</code> where <code>$ProcessArray</code> contains 247 process objects. The result is assigned to <code>$ProcessResults</code>. According to the chapter, what does <code>$ProcessResults.Count</code> return, and what is the correct way to count the actual inventory?</p>{
+    =<code>$ProcessResults.Count</code> returns 1 because the wrapper is a single scalar object. The correct way to count the inventory is <code>$ProcessResults.Data.Count</code>. # Correct. Section 5.8 makes this exact point under "Counting data returned by wrapper objects."
+    ~<code>$ProcessResults.Count</code> returns 247 because PowerShell aggregates nested array counts through the wrapper. # Incorrect. PowerShell does not aggregate nested counts; the chapter calls this out as a common trap.
+    ~<code>$ProcessResults.Count</code> returns $null because Count is not a property of [pscustomobject]. # Incorrect. .Count is available on PSCustomObject and returns 1 for a single instance.
+    ~<code>$ProcessResults.Count</code> returns 248 because it counts the wrapper itself plus the 247 nested objects. # Incorrect. PowerShell does not produce this aggregate count.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q9 - Source: 5.8 Parallel Execution from Ops (Receive-Job -Wait -AutoRemoveJob)
+// -----------------------------------------------------------------------------
+::Ch5.Q9 Receive-Job composite flags::[html]<p>The Section 5.8 orchestrator uses <code>$Jobs | Receive-Job -Wait -AutoRemoveJob</code>. What does this single piped expression replace from the longer Chapter 4 lifecycle?</p>{
+    =It combines Wait-Job, Receive-Job, and Remove-Job into one expression: -Wait blocks until all jobs complete, Receive-Job retrieves their output, and -AutoRemoveJob removes them after their output is received. # Correct. Section 5.8's pattern is the compact version of the four-step Chapter 4 lifecycle, with Receive-Job's flags handling the wait and remove steps.
+    ~It replaces only Receive-Job; Wait-Job and Remove-Job must still be called separately before and after. # Incorrect. The -Wait and -AutoRemoveJob flags eliminate the separate Wait-Job and Remove-Job calls.
+    ~It replaces only Wait-Job; Receive-Job and Remove-Job must still be called explicitly. # Incorrect. -Wait handles waiting AND -AutoRemoveJob handles removal, so the longer pattern is fully replaced.
+    ~It replaces all four lifecycle steps (Start-Job, Wait-Job, Receive-Job, Remove-Job) in a single line. # Incorrect. Start-Job is still a separate call; the composite expression replaces only the wait/receive/remove portion.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q10 - Source: 5.9 Troubleshooting and Cleanup (orphaned sessions diagnostic)
+// -----------------------------------------------------------------------------
+::Ch5.Q10 Orphaned sessions after orchestrator::[html]<p>Your orchestrator finishes running, and <code>Get-PSSession</code> shows two sessions still open. According to the chapter, what does this most likely tell you about your code?</p>{
+    =A function that opens a persistent session (the deploy pattern) failed before its finally block executed, or the function does not have a finally block at all. The first thing to check is the deploy function's session-cleanup logic. # Correct. Section 5.9's check-your-understanding question for orphaned sessions points to this exact diagnostic path.
+    ~The orchestrator did not call <code>Get-PSSession | Remove-PSSession</code> as its last line; the cleanup is the orchestrator's responsibility, not the function's. # Incorrect. The chapter places session cleanup inside the deploy function (via finally), not in the orchestrator.
+    ~Two of the four targets failed to authenticate, and PowerShell is keeping their sessions open for retry. # Incorrect. Failed authentication does not produce orphaned PSSession objects; it produces no session at all.
+    ~The PowerShell host is configured to retain sessions for 24 hours by default. # Incorrect. There is no such default retention; sessions persist until removed or the parent process exits.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q11 - Source: 5.10 Chapter Review and Capstone Readiness (separation of concerns)
+// (Final exam K9.1 angle: tests the architectural separation rather than
+// the function-level adaptation pattern)
+// -----------------------------------------------------------------------------
+::Ch5.Q11 Module vs orchestrator division::[html]<p>According to the chapter, what is the architectural division between the module and the orchestrator that you must keep clean for the capstone to work?</p>{
+    =The module contains reusable functions only. The orchestrator handles the target list, credential capture, module import, execution coordination, and result collection. The job script block re-imports the module and calls one of its functions. # Correct. Section 5.6 names this exact division and Section 5.10 reinforces it as the structural standard for the capstone.
+    ~The module contains the orchestrator and the functions; a separate orchestrator script is unnecessary in modern PowerShell. # Incorrect. The chapter explicitly distinguishes the two and warns against merging them.
+    ~The orchestrator contains all the imperative logic; the module is a thin manifest that lists which functions are available. # Incorrect. The module is the container for the actual function code, not a manifest.
+    ~The module contains the orchestrator's parallel logic; the orchestrator is just a wrapper that calls a single module function. # Incorrect. Parallel orchestration is the orchestrator's responsibility per the chapter, not the module's.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q12 - Source: 5.10 Chapter Review and Capstone Readiness (mapping table)
+// (Final exam K9.2 angle: tests the same mapping concept using the second
+// row of the table - Get-RemoteEventSummary to Get-RemoteServiceInventory)
+// -----------------------------------------------------------------------------
+::Ch5.Q12 Adapting Get-RemoteEventSummary for the capstone::[html]<p>Your Chapter 5 practice function <code>Get-RemoteEventSummary</code> queries the System event log on a remote target. The capstone requires <code>Get-RemoteServiceInventory</code> to query running services on a remote target. According to the Section 5.10 mapping table, what changes between these two functions?</p>{
+    =The cmdlet inside the script block changes from <code>Get-WinEvent</code> to <code>Get-Service</code>. The parameters, try/catch wrapper, and return-object shape stay identical. # Correct. Section 5.10's mapping table identifies the script block content as the only change between Chapter 5 practice functions and their capstone equivalents.
+    ~The function rewrites entirely. Get-RemoteServiceInventory has different parameters, a different error pattern, and a different return shape from Get-RemoteEventSummary. # Incorrect. The chapter explicitly states the capstone is a recombination, not a rewrite.
+    ~The function name is the only change; submitting Get-RemoteEventSummary renamed to Get-RemoteServiceInventory satisfies the capstone. # Incorrect. The chapter explicitly warns that renaming the practice module is not a valid capstone submission; the script block content must change.
+    ~The parameters change from -ComputerName + -Credential to -Host + -Identity. The script block stays the same since both query event-style data. # Incorrect. The capstone parameter standard remains -ComputerName + -Credential, matching the practice functions.
+}
+
+
+// =============================================================================
+// END OF QUIZ
+// Total questions: 12
+//
+// Final exam topic alignment (questions assess the same underlying concepts,
+// asked from a different angle):
+//
+//   Quiz Q5 (why parent module import does not satisfy the job)
+//     <-> Final exam K8.2 (function not found inside job)
+//
+//   Quiz Q1 (what changes vs stays fixed in the canonical skeleton)
+//   Quiz Q11 (orchestrator vs module separation of concerns)
+//     <-> Final exam K9.1 (adapting the pattern - script block vs wrapper)
+//
+//   Quiz Q12 (Get-RemoteEventSummary -> Get-RemoteServiceInventory mapping)
+//     <-> Final exam K9.2 (Get-RemoteTaskInfo -> Get-RemoteProcessInventory
+//                          mapping - same table row concept, different row)
+//
+// Other quiz questions test K5/K8/K9-adjacent concepts the final exam does
+// not directly hit: failure-path null Data (Q2), why deploy uses finally (Q3),
+// validate-before-remote-work (Q4), Export-ModuleMember purpose (Q6),
+// orchestrator length signal (Q7), wrapper Data counting trap (Q8),
+// Receive-Job composite flags (Q9), orphaned sessions diagnostic (Q10).
+// =============================================================================
