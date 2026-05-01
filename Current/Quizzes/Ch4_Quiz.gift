@@ -1,0 +1,172 @@
+// =============================================================================
+// 170A WOAC Advanced PowerShell Scripting
+// Chapter 4 End-of-Chapter Quiz: Performance and Parallel Execution
+// =============================================================================
+// Authoritative content source: 170A WOAC Advanced PowerShell Scripting course
+//   book on the CVTE LMS (Moodle Book ID 584), Chapter 4 sections 4.1-4.5
+// Format: Moodle GIFT
+// Total questions: 10
+// Type: Formative - multiple attempts allowed per WRE-SCOPE-001
+//
+// Final exam alignment: Chapter 4 is the source of CTSSB K5 (PowerShell
+// performance techniques including parallel jobs). The final exam has three
+// K5 questions. This quiz tests the same underlying concepts using different
+// scenarios:
+//
+//   Final exam K5.1 (job lifecycle order: Wait-Job, Receive-Job, Remove-Job)
+//     <-> Quiz Q4 (effect of leaving jobs uncleared)
+//
+//   Final exam K5.2 ("optimize before parallelizing" question)
+//     <-> Quiz Q3 (good vs bad candidate identification)
+//     <-> Quiz Q5 (the speedup-with-overhead phenomenon)
+//
+//   Final exam K5.3 (Measure-Command as standard baselining tool)
+//     <-> Quiz Q1 (TimeSpan return type)
+//     <-> Quiz Q2 (why repeat measurements)
+//
+// All questions follow the contract single-correct rule (Section 11.1.b).
+// =============================================================================
+
+
+$CATEGORY: $course$/170A_WOAC_Quizzes/Chapter_4
+
+
+// -----------------------------------------------------------------------------
+// Q1 - Source: 4.1 Measuring Performance (TimeSpan return type)
+// (Final exam K5.3 angle: tests what Measure-Command actually returns,
+// not just that it is the right cmdlet)
+// -----------------------------------------------------------------------------
+::Ch4.Q1 Measure-Command return value::[html]<p>You wrap a script block in <code>Measure-Command</code> and assign the result to <code>$Timing</code>. According to the chapter, what is <code>$Timing</code>?</p>{
+    =A <code>TimeSpan</code> object that describes how long the operation took, with properties like <code>TotalSeconds</code>, <code>Milliseconds</code>, and <code>Minutes</code>. # Correct. Section 4.1 explicitly identifies the return value as a TimeSpan object and walks through inspecting it with Get-Member.
+    ~The output the script block produced during execution, with timing metadata appended. # Incorrect. Measure-Command does not return the script block's output; it returns only timing data.
+    ~A string in the format "HH:MM:SS.fff" representing wall-clock time. # Incorrect. The return value is an object, not a formatted string.
+    ~A numeric value in milliseconds, suitable for direct comparison with other measurements. # Incorrect. The return value is a TimeSpan object; you access numeric values through its properties (e.g., $Timing.TotalSeconds).
+}
+
+
+// -----------------------------------------------------------------------------
+// Q2 - Source: 4.1 Measuring Performance (repeated measurements)
+// (Final exam K5.3 angle: tests the discipline of repeated measurements,
+// not just naming the cmdlet)
+// -----------------------------------------------------------------------------
+::Ch4.Q2 One measurement is not enough::[html]<p>According to the chapter, why is it a good habit to take multiple measurements of the same script under similar conditions, rather than relying on one timing result?</p>{
+    =Remote work can vary based on connection state, current load, caching, and network conditions. Repeated measurements distinguish a consistently slow script from a one-off slow run. # Correct. Section 4.1 states this exactly and provides a 1..3 ForEach-Object example for repeated runs.
+    ~PowerShell caches the first <code>Measure-Command</code> result, so subsequent runs are required to clear the cache and get an accurate value. # Incorrect. There is no Measure-Command result cache; the chapter's reason is variability, not caching.
+    ~The first measurement always includes JIT compilation overhead and is therefore unreliable. # Incorrect. The chapter does not name JIT compilation as the issue; the named cause is environmental variability.
+    ~The CTSSB rubric requires three measurements minimum for any performance claim. # Incorrect. The chapter does not cite a CTSSB requirement here; the recommendation is based on practical variability.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q3 - Source: 4.3 Jobs and Parallel Execution (good vs bad candidates)
+// (Final exam K5.2 angle: tests recognition of a bad candidate via
+// concrete scenario rather than generic "what to ask first")
+// -----------------------------------------------------------------------------
+::Ch4.Q3 Bad candidate for jobs::[html]<p>According to the chapter, which of these tasks is a BAD candidate for parallelization with <code>Start-Job</code>?</p>{
+    =A four-step deployment where step 2 on each target requires the result returned from step 1 on a different target. # Correct. Section 4.3 explicitly identifies tasks where operations depend on each other as bad candidates for jobs.
+    ~Querying the same service status on each of four targets and collecting the results into a table. # Incorrect. This is the canonical good-candidate pattern from Section 4.3.
+    ~Running an inventory script across 50 servers where each server is processed independently. # Incorrect. Independent units of work across many targets is exactly what jobs are for.
+    ~Copying a configuration file to multiple targets where each copy operation is independent of the others. # Incorrect. Independent operations are good candidates for parallel execution.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q4 - Source: 4.3 Jobs and Parallel Execution (lifecycle and cleanup)
+// (Final exam K5.1 angle: tests the consequence of skipping cleanup,
+// not the lifecycle order itself)
+// -----------------------------------------------------------------------------
+::Ch4.Q4 Skipping Remove-Job::[html]<p>You run a script that uses <code>Start-Job</code>, <code>Wait-Job</code>, and <code>Receive-Job</code>, but skips <code>Remove-Job</code>. After the script returns its results, you run <code>Get-Job</code>. According to the chapter, what do you see, and why does it matter?</p>{
+    =Get-Job lists all the completed jobs from the run. They remain in the session until explicitly removed, and accumulating them across many runs clutters the session and makes later troubleshooting harder. # Correct. Section 4.3's "Try it" callout describes this exact behavior and Section 4.4's troubleshooting checklist depends on a clean job state.
+    ~Get-Job returns nothing because Receive-Job automatically removes a job once its output has been received. # Incorrect. Receive-Job retrieves output; it does not remove the job.
+    ~Get-Job throws an error because completed-but-not-removed jobs corrupt the job table. # Incorrect. Completed jobs do not corrupt the job table; they simply persist.
+    ~Get-Job returns the original script blocks but not the job objects, since the job objects expire when their parent process exits. # Incorrect. Job objects persist for the lifetime of the PowerShell session, regardless of whether the parent script has finished.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q5 - Source: 4.3 Jobs and Parallel Execution (theoretical vs realistic speedup)
+// (Final exam K5.2 angle: tests the efficiency-before-parallelism reasoning
+// from the inverse direction - explains why a parallel run is not as fast
+// as the math predicts)
+// -----------------------------------------------------------------------------
+::Ch4.Q5 Why parallel is not perfectly N times faster::[html]<p>A script runs four ten-second queries sequentially in 40 seconds. Converted to four parallel jobs, it completes in 11 seconds rather than the theoretical 10. According to the chapter, where does the extra second come from?</p>{
+    =Job overhead - starting, scheduling, waiting on, and receiving results from background jobs takes a small but real amount of time on top of the actual work. # Correct. Section 4.3's check-your-understanding question for this scenario points to job overhead, and Section 4.5 reinforces that jobs are not "free" in runtime cost.
+    ~PowerShell deliberately throttles parallel execution to prevent resource exhaustion, even when only four jobs are running. # Incorrect. There is no four-job throttle; the extra time is overhead, not throttling.
+    ~Network latency increases linearly with the number of simultaneous connections, so parallelization adds latency. # Incorrect. The chapter does not cite cumulative latency as the cause; the named cause is job overhead.
+    ~The slowest of the four queries determines runtime, and one of the four happened to take an extra second. # Incorrect. The scenario states all four queries take ten seconds; the extra second is structural overhead, not query variance.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q6 - Source: 4.4 Scope, Imports, and Inputs in Jobs (two scope boundaries)
+// -----------------------------------------------------------------------------
+::Ch4.Q6 Two scope boundaries::[html]<p>The chapter shows a job pattern that uses two <code>param()</code> blocks and two <code>-ArgumentList</code> calls in the same code. According to the chapter, why are both needed?</p>{
+    =The outer <code>param()</code> and <code>-ArgumentList</code> pass values from the console into the job. The inner <code>param()</code> and <code>-ArgumentList</code> pass values from the job into the remote session. Each is a real scope boundary. # Correct. Section 4.4's callout names this exactly: "Two scope boundaries, not one."
+    ~PowerShell requires two <code>param()</code> blocks for any job that calls <code>Invoke-Command</code> internally; this is a syntactic requirement. # Incorrect. PowerShell does not require two param() blocks syntactically; the two are present because there are two real boundaries.
+    ~The first <code>param()</code> declares the variable; the second <code>param()</code> assigns its value. PowerShell separates declaration and assignment in job script blocks. # Incorrect. PowerShell does not separate declaration and assignment this way.
+    ~The outer <code>param()</code> handles authentication; the inner <code>param()</code> handles the workload. They are functionally distinct kinds of parameters. # Incorrect. Neither param() block is specifically for authentication; both pass arbitrary values across scope boundaries.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q7 - Source: 4.4 Scope, Imports, and Inputs in Jobs (module imports)
+// -----------------------------------------------------------------------------
+::Ch4.Q7 Module imported in parent::[html]<p>You imported a module in your console session at the start of the day. Later, you start a job whose script block calls a function from that module. According to the chapter, what happens?</p>{
+    =The job fails with a "term is not recognized" error, because jobs run in a separate session that does not inherit the parent's loaded modules. The fix is to import the module inside the job's script block. # Correct. Section 4.4 covers this exact failure mode; module imports do not cross the job scope boundary.
+    ~The job runs successfully because PowerShell automatically replicates loaded modules into job sessions at job start. # Incorrect. The chapter explicitly contradicts this: jobs run in a separate session context, and the parent's modules do not transfer.
+    ~The job runs successfully but with a deprecation warning, since referencing parent-session modules from a job is supported but not recommended. # Incorrect. The chapter does not describe a deprecation pattern; the behavior is failure, not warning.
+    ~The job hangs indefinitely waiting for the module to be re-imported into the job's session. # Incorrect. Jobs do not auto-import modules; they fail with a clear error.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q8 - Source: 4.4 Scope, Imports, and Inputs in Jobs (returning objects)
+// -----------------------------------------------------------------------------
+::Ch4.Q8 Why return objects from jobs::[html]<p>According to the chapter, why is it better for a job to return a <code>[pscustomobject]</code> than a formatted string built with <code>Format-Table</code> output captured into a variable?</p>{
+    =Objects can be sorted, filtered, exported, and validated downstream. A formatted string preserves the visual layout but loses the machine-usable structure. # Correct. Section 4.4's "Returning objects instead of screen-only text" callout makes this exact point.
+    ~Objects use less memory than strings, which matters when many jobs are running concurrently. # Incorrect. The chapter does not cite memory as the reason; the named reason is downstream usability.
+    ~Strings always corrupt when crossing the job scope boundary, while objects are preserved unchanged. # Incorrect. Strings cross the boundary fine; the issue is what you can do with them afterward.
+    ~Format-Table cannot run inside a job script block, so the only option is to return objects. # Incorrect. Format-Table runs inside jobs; the chapter recommends against using it that way for usability reasons.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q9 - Source: 4.5 Parallel Patterns for This Course (canonical pattern)
+// -----------------------------------------------------------------------------
+::Ch4.Q9 Course canonical pattern::[html]<p>The chapter standardizes on a single canonical pattern for the rest of the course. Which of these describes that pattern?</p>{
+    =Ops defines a target list, starts one job per target, waits for all jobs, receives results, and removes the jobs. The orchestrator coordinates; the module does the per-target work. # Correct. Section 4.5 names this exact pattern and the division of responsibility between the orchestrator and the module.
+    ~Ops opens a single PSSession per target, runs all operations sequentially in each session, then closes all sessions at once. # Incorrect. This is a sequential pattern, not the canonical parallel pattern.
+    ~Ops uses <code>ForEach-Object -Parallel</code> for all multi-target operations, since it is the simpler PowerShell 7 pattern. # Incorrect. The chapter explicitly states the course uses Start-Job for the canonical pattern, with ForEach-Object -Parallel as a real-but-noncanonical alternative.
+    ~Ops dispatches a single job containing a foreach loop over all targets, so all targets are handled in one job. # Incorrect. The canonical pattern is one job per target, not one job containing the loop.
+}
+
+
+// -----------------------------------------------------------------------------
+// Q10 - Source: 4.5 Parallel Patterns for This Course (jobs vs ForEach-Object -Parallel)
+// -----------------------------------------------------------------------------
+::Ch4.Q10 Why jobs over ForEach-Object -Parallel for the capstone::[html]<p>According to the chapter, why does the course standardize on <code>Start-Job</code> rather than <code>ForEach-Object -Parallel</code> for the capstone, even though the latter has less ceremony?</p>{
+    =The capstone rubric is built around the Start-Job / Wait-Job / Receive-Job mechanics, and jobs handle module imports more cleanly than parallel runspaces do. # Correct. Section 4.5's "A note on ForEach-Object -Parallel" callout names both reasons specifically.
+    ~ForEach-Object -Parallel is significantly slower than Start-Job for any workload involving more than two targets. # Incorrect. The chapter does not claim a runtime difference between the two patterns; the difference is rubric alignment and module-import behavior.
+    ~ForEach-Object -Parallel does not work in domain-based environments like the CVTE range. # Incorrect. ForEach-Object -Parallel works in domain environments; the chapter's reason for choosing jobs is rubric and module behavior, not authentication.
+    ~ForEach-Object -Parallel only works in PowerShell 5.1, while the course uses PowerShell 7. # Incorrect. ForEach-Object -Parallel is a PowerShell 7 feature, not a 5.1 feature.
+}
+
+
+// =============================================================================
+// END OF QUIZ
+// Total questions: 10
+//
+// Final exam topic alignment (questions assess the same underlying concepts,
+// asked from a different angle):
+//   Quiz Q1 (Measure-Command returns TimeSpan) and Q2 (repeated measurements)
+//     <-> Final exam K5.3 (Measure-Command as standard baselining tool)
+//   Quiz Q3 (bad candidate identification) and Q5 (job overhead in speedup math)
+//     <-> Final exam K5.2 (optimize before parallelizing)
+//   Quiz Q4 (consequence of skipping Remove-Job)
+//     <-> Final exam K5.1 (job lifecycle order)
+//
+// Other quiz questions test K5/K8 concepts the final exam does not directly
+// hit: two scope boundaries (Q6), parent module not visible to job (Q7),
+// objects-vs-strings rationale (Q8), the canonical pattern (Q9), and the
+// Start-Job vs ForEach-Object -Parallel choice (Q10).
+// =============================================================================
